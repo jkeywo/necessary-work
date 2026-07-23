@@ -81,6 +81,7 @@ fn main() {
             dirty: true,
         })
         .insert_resource(Time::<Fixed>::from_hz(ticks_per_second))
+        .init_resource::<ui::TooltipState>()
         .add_systems(Startup, setup)
         .add_systems(FixedUpdate, advance_simulation)
         .add_systems(
@@ -88,6 +89,7 @@ fn main() {
             (
                 ui::handle_buttons,
                 ui::rebuild.after(ui::handle_buttons),
+                ui::tooltips.after(ui::rebuild),
                 dev_hooks,
             ),
         )
