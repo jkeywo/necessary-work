@@ -1,6 +1,6 @@
-//! `nw-tools` — content linting and balance reports over the authored catalogue.
-//! It reads content only (never the client or the live simulation state) so it
-//! can run in CI as a gate on authored data.
+//! `nw-tools` — content linting and balance reports over the authored
+//! catalogue. It reads content only (never the client or the live simulation
+//! state) so it can run in CI as a gate on authored data.
 
 use clap::{Parser, Subcommand};
 
@@ -13,7 +13,7 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Command {
-    /// Validate the authored content catalogue's cross-references and scopes.
+    /// Validate the authored content catalogue's schema and cross-references.
     Lint,
 }
 
@@ -21,9 +21,15 @@ fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
     match cli.command {
         Command::Lint => {
-            let issues = nw_content::Catalogue::default().validate();
+            let catalogue = nw_content::Catalogue::load().map_err(anyhow::Error::msg)?;
+            let issues = catalogue.validate();
             if issues.is_empty() {
-                println!("content: no issues");
+                println!(
+                    "content ok: {} projects, {} opportunities, version {:016x}",
+                    catalogue.projects.len(),
+                    catalogue.opportunities.len(),
+                    catalogue.content_version
+                );
             } else {
                 for issue in &issues {
                     println!("content issue: {issue:?}");

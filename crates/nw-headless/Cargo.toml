@@ -5,6 +5,10 @@ edition.workspace = true
 license.workspace = true
 repository.workspace = true
 
+[lib]
+name = "nw_headless"
+path = "src/lib.rs"
+
 [[bin]]
 name = "nw"
 path = "src/main.rs"

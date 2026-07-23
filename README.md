@@ -21,11 +21,17 @@ until that economy is proven.
 
 ## Status
 
-Early scaffold. The deterministic simulation core defines its canonical units
-and world structure; the tick loop, command handling, effect vocabulary, and
-Bevy client are being built against the recorded design in
-[`pasm/spec/core`](pasm/spec/core). See [`docs/design`](docs/design) for the
-full design pack.
+The Stage 1 deterministic core is implemented and tested: the full tick loop,
+semantic command boundary, controlled effect vocabulary, project lifecycle,
+planning queue, programme-slot milestones, opportunities, calculation traces,
+projected previews, and command-log replay validation, driving a 13-project
+authored catalogue. Two seeded bot strategies (deploy-first and capacity-first)
+both reach victory in ~20–23 minutes of simulated time at the authored speed,
+and every run's record replay-validates. What remains of Stage 1 is the Bevy
+dashboard spike and structured human playtests — see
+[`pasm/spec/roadmap`](pasm/spec/roadmap). The recorded design lives in
+[`pasm/spec/core`](pasm/spec/core); the source design pack in
+[`docs/design`](docs/design).
 
 ## Repository layout
 
@@ -65,7 +71,8 @@ PASM tooling.
 
 ```bash
 cargo test --workspace
-cargo run -p nw-headless -- world      # print the fixed continents/sectors/icons
+cargo run --release -p nw-headless -- run --seed 1 --strategy deploy-first
+cargo run --release -p nw-headless -- batch --count 4   # both build orders must win
 cargo run -p nw-tools -- lint          # lint the authored content catalogue
 ```
 

@@ -27,6 +27,10 @@ entities:
       kind: value types
 
   - component: semantic-command-boundary
+    implementation:
+      status: confirmed
+      paths: [crates/nw-simulation/src/command.rs, crates/nw-simulation/src/sim.rs]
+      tests: [cargo test -p nw-simulation]
     core:
       status: accepted
       confidence: confirmed
@@ -53,6 +57,10 @@ entities:
         - claim-opportunity
 
   - component: fixed-tick-order
+    implementation:
+      status: confirmed
+      paths: [crates/nw-simulation/src/sim.rs]
+      tests: [cargo test -p nw-simulation]
     core:
       status: accepted
       confidence: confirmed
@@ -72,6 +80,10 @@ entities:
       kind: update loop
 
   - component: controlled-effect-vocabulary
+    implementation:
+      status: confirmed
+      paths: [crates/nw-content/src/schema.rs]
+      tests: [cargo test -p nw-content]
     core:
       status: accepted
       confidence: confirmed
@@ -90,6 +102,10 @@ entities:
       kind: effect schema
 
   - component: scaling-and-breakpoints
+    implementation:
+      status: confirmed
+      paths: [crates/nw-simulation/src/calc.rs]
+      tests: [cargo test -p nw-simulation]
     core:
       status: accepted
       confidence: confirmed
@@ -106,6 +122,10 @@ entities:
       kind: derived calculation
 
   - component: project-lifecycle
+    implementation:
+      status: confirmed
+      paths: [crates/nw-simulation/src/sim.rs, crates/nw-simulation/src/state.rs]
+      tests: [cargo test -p nw-simulation]
     core:
       status: accepted
       confidence: confirmed
@@ -123,6 +143,10 @@ entities:
       kind: lifecycle state machine
 
   - component: named-rng-streams
+    implementation:
+      status: confirmed
+      paths: [crates/nw-simulation/src/rng.rs]
+      tests: [cargo test -p nw-simulation]
     core:
       status: accepted
       confidence: confirmed
@@ -137,6 +161,10 @@ entities:
       kind: deterministic randomness
 
   - component: recoverability-and-victory
+    implementation:
+      status: confirmed
+      paths: [crates/nw-simulation/src/state.rs, crates/nw-simulation/tests/contract.rs]
+      tests: [cargo test -p nw-simulation, cargo test -p nw-headless]
     core:
       status: accepted
       confidence: confirmed
@@ -151,6 +179,9 @@ entities:
       kind: invariant
 
   - component: explanation-contract
+    implementation:
+      status: confirmed
+      paths: [crates/nw-simulation/src/trace.rs, crates/nw-simulation/src/calc.rs]
     core:
       status: accepted
       confidence: confirmed
@@ -188,6 +219,10 @@ entities:
       kind: validation record
 
   - component: benchmark-timing
+    implementation:
+      status: confirmed
+      paths: [crates/nw-simulation/src/sim.rs]
+      tests: [cargo test -p nw-simulation]
     core:
       status: accepted
       confidence: confirmed
@@ -202,6 +237,10 @@ entities:
       kind: ranked clock
 
   - contract: determinism-and-test-obligations
+    implementation:
+      status: confirmed
+      paths: [crates/nw-simulation/tests/contract.rs, crates/nw-headless/tests/build_orders.rs]
+      tests: [cargo test --workspace]
     core:
       status: accepted
       confidence: confirmed

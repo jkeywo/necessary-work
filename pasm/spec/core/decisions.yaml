@@ -160,6 +160,67 @@ entities:
         representative. Scoring must not moralise or claim a false percentile.
       references: [completion-and-records, scoring-is-not-a-moral-grade]
 
+  # Decisions made while implementing the Stage 1 deterministic core.
+
+  - decision: realized-effects-lock-at-completion
+    core:
+      status: accepted
+      confidence: confirmed
+      title: A completion locks its scaled magnitudes; icons never act retroactively
+      summary: >-
+        A project's emissions reductions are scaled by the lead continent's
+        icons at the moment of completion and stored as realised effects.
+        Completed projects therefore never grow retroactively as icons
+        accumulate, and a preview computed by hypothetically realising against a
+        copy of the state equals the realised effect under unchanged conditions
+        by construction — the preview-accuracy test obligation holds
+        structurally rather than by parallel arithmetic. Linear-rollout partials
+        use current scaling until completion locks them, per the tick order's
+        partial-rollout recalculation step.
+      references: [project-comparison-preview, scaling-and-breakpoints, fixed-tick-order]
+
+  - decision: derived-state-recomputed-per-tick
+    core:
+      status: accepted
+      confidence: confirmed
+      title: Derived state is recomputed from the standing lists every tick
+      summary: >-
+        Icons, sector emissions, income deltas, mandate maximum, unlocks, and
+        slot milestones are recomputed each tick from baselines plus the
+        standing completed and active project lists. Cancellation and
+        decommission cleanup are therefore exact by construction — removing the
+        entry removes every trace of it — rather than maintained by paired
+        add/remove bookkeeping that could drift. The completions-ever counter
+        that prices cost curves is deliberately not derived: it never
+        decrements, so decommission-and-rebuild toggling is never profitable.
+      references: [project-lifecycle, fixed-tick-order]
+
+  - decision: in-crate-pcg32-and-fnv
+    core:
+      status: accepted
+      confidence: confirmed
+      title: Hand-rolled PCG32 and FNV-1a, in-crate
+      summary: >-
+        The named RNG streams use an in-crate PCG-XSH-RR 64/32 (seeded through
+        SplitMix64 with the stream identifier folded in) and digests use
+        in-crate FNV-1a 64 over postcard bytes, mirroring the choice rogue-hunter
+        proved: no dependency upgrade can silently change replays, and the
+        target-independent encoding keeps native and WASM digests identical.
+      references: [named-rng-streams, saves-logs-validation, integer-fixed-point-math]
+
+  - decision: unlocks-are-a-ratchet
+    core:
+      status: accepted
+      confidence: confirmed
+      title: Project unlocks persist once granted
+      summary: >-
+        Decommissioning removes a project's benefits, icons, spillovers, and
+        upkeep — but not the unlocks it granted. An unlock is knowledge, and
+        knowledge once gained stays gained. Programme slots ratchet the same
+        way: a milestone once passed keeps its slot even if the Institutions
+        stock later falls.
+      references: [project-lifecycle, programme-slots]
+
   - decision: pure-simulation-boundary-note
     core:
       status: accepted

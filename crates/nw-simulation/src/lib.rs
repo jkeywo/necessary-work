@@ -8,13 +8,21 @@
 //!
 //! Authoritative state uses integers / fixed-point, never floating-point
 //! outcomes, so native and WASM builds cannot diverge.
-//!
-//! Scaffold status: the units and world structure below are real (early
-//! implementation order, step 1). The tick loop, command handling, effect
-//! vocabulary, and validation are grown against `pasm/spec/core`.
 
+pub mod calc;
+pub mod command;
+pub mod preview;
+pub mod rng;
+pub mod sim;
+pub mod state;
+pub mod trace;
 pub mod units;
 pub mod world;
 
+pub use command::{Command, LoggedCommand, Rejection};
+pub use preview::{preview, Preview};
+pub use sim::{derive_state, Sim, RULESET_VERSION};
+pub use state::RunState;
+pub use trace::{BlockReason, TraceEvent, TraceKind};
 pub use units::Tick;
 pub use world::{Continent, Icon, Sector};

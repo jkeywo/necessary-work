@@ -1,0 +1,70 @@
+// The counterfactual 1990 scenario. All values are illustrative, rounded, and
+// balance-driven — not forecasts. Baseline incomes are strictly positive so
+// every valid start has a path to victory (recoverability invariant).
+//
+// Units: emissions in milli-GtCO2e/year (1000 = 1 Gt); money in whole units
+// for stocks/costs and milli-units per tick for incomes; time in ticks.
+(
+    scenario: (
+        id: "counterfactual-1990",
+        authored_speed_ticks_per_second: 4,
+        finance_start: 800,
+        mandate_start: 10,
+        mandate_max_start: 20,
+        // Each continent's contribution is visible; Europe gets no bonus for
+        // hosting the secretariat.
+        finance_income_milli: [
+            (Europe, 4000),
+            (NorthAmerica, 4000),
+            (MajorityWorld, 3000),
+        ],
+        mandate_income_milli: [
+            (Europe, 3000),
+            (NorthAmerica, 3000),
+            (MajorityWorld, 3000),
+        ],
+        // Nine fixed sector baselines, roughly shaped on 1990 gross emissions
+        // (~38 GtCO2e/yr) and deliberately rounded. They do not change without
+        // projects.
+        sector_baselines_milli_gt: [
+            (Europe, Power, 3500),
+            (Europe, TransportAndBuildings, 2500),
+            (Europe, IndustryAndLand, 2000),
+            (NorthAmerica, Power, 4000),
+            (NorthAmerica, TransportAndBuildings, 3000),
+            (NorthAmerica, IndustryAndLand, 2000),
+            (MajorityWorld, Power, 7000),
+            (MajorityWorld, TransportAndBuildings, 5000),
+            (MajorityWorld, IndustryAndLand, 9000),
+        ],
+        starting_variation_permille: 50,
+        // A second global programme slot unlocks early when any continent
+        // reaches Institutions 2; a third around the midpoint at 6.
+        slot_milestones: [
+            (institutions: 2),
+            (institutions: 6),
+        ],
+        opportunity_gap_ticks: (300, 900),
+        opportunity_lifetime_ticks: 500,
+        hash_every_ticks: 512,
+    ),
+    // Low-value beneficial events: no trade-off, no minigame, no slot use.
+    // Ignoring them is never punitive.
+    opportunities: [
+        (
+            id: "research-grant",
+            title: "Multilateral research grant",
+            effect: FinanceGrant(units: 300),
+        ),
+        (
+            id: "treaty-goodwill",
+            title: "Treaty-round goodwill",
+            effect: MandateBoost(milli: 2000),
+        ),
+        (
+            id: "skills-workshop",
+            title: "Regional skills workshop",
+            effect: IconGrant(icon: Workforce),
+        ),
+    ],
+)

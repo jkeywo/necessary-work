@@ -46,6 +46,10 @@ entities:
       owns: [authoritative-run-state]
 
   - state: authoritative-run-state
+    implementation:
+      status: confirmed
+      paths: [crates/nw-simulation/src/state.rs]
+      tests: [cargo test -p nw-simulation]
     core:
       status: accepted
       confidence: confirmed

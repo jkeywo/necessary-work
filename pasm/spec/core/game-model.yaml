@@ -19,8 +19,8 @@ entities:
   - component: world-structure
     implementation:
       status: confirmed
-      paths: [crates/nw-simulation/src/world.rs]
-      tests: [cargo test -p nw-simulation]
+      paths: [crates/nw-content/src/world.rs, crates/nw-simulation/src/world.rs]
+      tests: [cargo test -p nw-content, cargo test -p nw-simulation]
     core:
       status: accepted
       confidence: confirmed
@@ -69,7 +69,7 @@ entities:
   - component: capacity-icons
     implementation:
       status: confirmed
-      paths: [crates/nw-simulation/src/world.rs]
+      paths: [crates/nw-content/src/world.rs, crates/nw-simulation/src/sim.rs]
       tests: [cargo test -p nw-simulation]
     core:
       status: accepted
@@ -86,6 +86,10 @@ entities:
       kind: installed capacity stock
 
   - component: projects
+    implementation:
+      status: confirmed
+      paths: [crates/nw-content/src/schema.rs, content/projects.ron]
+      tests: [cargo test -p nw-content]
     core:
       status: accepted
       confidence: confirmed
@@ -106,6 +110,10 @@ entities:
       kind: authored programme catalogue
 
   - component: programme-slots
+    implementation:
+      status: confirmed
+      paths: [crates/nw-simulation/src/sim.rs, content/scenario.ron]
+      tests: [cargo test -p nw-simulation]
     core:
       status: accepted
       confidence: confirmed
@@ -121,6 +129,10 @@ entities:
       kind: concurrency gate
 
   - component: planning-queue
+    implementation:
+      status: confirmed
+      paths: [crates/nw-simulation/src/sim.rs, crates/nw-simulation/src/state.rs]
+      tests: [cargo test -p nw-simulation]
     core:
       status: accepted
       confidence: confirmed
@@ -136,6 +148,10 @@ entities:
       kind: ordered plan
 
   - component: opportunities
+    implementation:
+      status: confirmed
+      paths: [crates/nw-simulation/src/sim.rs, content/scenario.ron]
+      tests: [cargo test -p nw-simulation]
     core:
       status: accepted
       confidence: confirmed
@@ -166,6 +182,10 @@ entities:
       kind: pacing
 
   - component: project-comparison-preview
+    implementation:
+      status: confirmed
+      paths: [crates/nw-simulation/src/preview.rs]
+      tests: [cargo test -p nw-simulation]
     core:
       status: accepted
       confidence: confirmed
@@ -182,6 +202,11 @@ entities:
       kind: derived preview
 
   - component: transparency-layers
+    implementation:
+      # The data layer (calc traces, structured events) is real; the three
+      # presentation views arrive with the client.
+      status: declared
+      paths: [crates/nw-simulation/src/calc.rs, crates/nw-simulation/src/trace.rs]
     core:
       status: accepted
       confidence: confirmed
@@ -198,6 +223,12 @@ entities:
       kind: derived presentation
 
   - component: completion-and-records
+    implementation:
+      # Victory detection, ranked ticks, and validated records are real; the
+      # end screen, brackets, and causal recap arrive with the client.
+      status: declared
+      paths: [crates/nw-simulation/src/sim.rs, crates/nw-persistence/src/lib.rs]
+      tests: [cargo test -p nw-persistence, cargo test -p nw-headless]
     core:
       status: accepted
       confidence: confirmed

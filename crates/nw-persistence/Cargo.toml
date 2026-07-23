@@ -6,9 +6,11 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+nw-content = { workspace = true }
 nw-simulation = { workspace = true }
 serde = { workspace = true }
 postcard = { workspace = true }
+ron = { workspace = true }
 
 [lints]
 workspace = true
