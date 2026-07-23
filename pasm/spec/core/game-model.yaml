@@ -1,0 +1,383 @@
+# The prototype game model: world structure, resources, capacity icons,
+# projects, programme capacity, the planning queue, opportunities, controls,
+# transparency, completion, the player role, and the semantic command verbs.
+# Derived from the design pack's feature list and simulation contract.
+
+entities:
+  - role: cfa-operator
+    core:
+      status: accepted
+      confidence: confirmed
+      title: CFA coordinator (the player)
+      summary: >-
+        The player acts as the Common Future Authority's coordinating hand:
+        queueing programmes, choosing lead continents, and pacing the transition.
+        The role coordinates and finances; it does not bypass local
+        implementation or democratic authority.
+      references: [mandate-is-coordination-not-consent]
+
+  - component: world-structure
+    implementation:
+      status: confirmed
+      paths: [crates/nw-simulation/src/world.rs]
+      tests: [cargo test -p nw-simulation]
+    core:
+      status: accepted
+      confidence: confirmed
+      title: Three continents, three sectors each
+      summary: >-
+        Three continental regions (Europe, North America, and the provisionally
+        labelled Majority World), each with three emission sectors (Power,
+        Transport and Buildings, Industry and Land). The prototype tracks nine
+        sector emission rates whose baselines are fixed unless changed by
+        projects. Differences are authored starting systems and bottlenecks.
+      references: [regional-framing-guardrail, capacity-icons]
+    architecture:
+      kind: world data
+
+  - resource: finance
+    core:
+      status: accepted
+      confidence: confirmed
+      title: Finance
+      summary: >-
+        One global stock with no maximum that accumulates over time; each
+        continent's contribution is visible. A modest positive baseline income
+        guarantees recoverability. Projects may add income, impose maintenance,
+        reduce future costs, or improve spending efficiency.
+      references: [recoverability-baselines]
+    game_design:
+      sources: [positive continental baseline income, project income, spending-efficiency improvements]
+      sinks: [upfront project Finance costs, ongoing maintenance/upkeep]
+
+  - resource: mandate
+    core:
+      status: accepted
+      confidence: confirmed
+      title: Mandate
+      summary: >-
+        One global stock with a current value, a maximum, and an income delta,
+        spent upfront to begin contentious or administratively demanding
+        projects. Each continent contributes visibly to baseline income; some
+        projects raise income and many raise the maximum. Represents CFA treaty
+        coordination authority, not local public consent.
+      references: [mandate-is-coordination-not-consent, recoverability-baselines]
+    game_design:
+      sources: [positive continental baseline income, Mandate-income projects, Mandate-maximum projects]
+      sinks: [upfront Mandate costs to begin contentious projects]
+
+  - component: capacity-icons
+    implementation:
+      status: confirmed
+      paths: [crates/nw-simulation/src/world.rs]
+      tests: [cargo test -p nw-simulation]
+    core:
+      status: accepted
+      confidence: confirmed
+      title: Four continental capacity icons
+      summary: >-
+        Knowledge, Infrastructure, Workforce, and Institutions are installed
+        capacities tracked separately per continent, not spendable resources and
+        never pooled globally. Projects may explicitly use them for
+        prerequisites, scaling, breakpoints, unlocks, duration, costs, effect
+        upgrades, or spillovers. There is no generic capacity score.
+      references: [world-structure, installed-bottlenecks-differ]
+    architecture:
+      kind: installed capacity stock
+
+  - component: projects
+    core:
+      status: accepted
+      confidence: confirmed
+      title: Data-defined projects
+      summary: >-
+        Approximately 12 projects, weighted toward power, each defined through
+        the controlled effect vocabulary. A project specifies lead continent,
+        Finance and Mandate costs, duration, slot requirement, prerequisites,
+        icon outputs, scaling, breakpoints, scope/spillovers, sector effects,
+        recurring income/upkeep, repeat model, activation profile, and
+        context/source metadata. Prototype activation profiles are Completion and
+        Linear rollout; repeat models are Unique, Repeatable, Tiered, and Capped
+        rollout. Cancelling an incomplete project destroys progress with no
+        refund; completed projects may be decommissioned with no refund, and
+        rebuild rules must prevent profitable toggling.
+      references: [controlled-effect-vocabulary, project-lifecycle, capacity-icons]
+    architecture:
+      kind: authored programme catalogue
+
+  - component: programme-slots
+    core:
+      status: accepted
+      confidence: confirmed
+      title: Global programme slots
+      summary: >-
+        Programme slots are global. The run starts with one, located
+        administratively in Europe with no efficiency bonus. A second slot
+        unlocks early when a continent reaches a visible Institutions milestone;
+        a third unlocks around the midpoint through a later continental
+        Institutions milestone. There are no dedicated slot-tax projects.
+      references: [coordination-expands-programmes, european-hq-is-contingent, planning-queue]
+    architecture:
+      kind: concurrency gate
+
+  - component: planning-queue
+    core:
+      status: accepted
+      confidence: confirmed
+      title: Strict FIFO planning queue
+      summary: >-
+        A strict FIFO queue that can be added to, removed from, and reordered at
+        any time. Resources are not reserved. The head begins when its
+        prerequisites, resources, and a slot are available; if blocked, the queue
+        stalls and explains why. No automatic optimisation or production
+        automation.
+      references: [programme-slots, project-lifecycle, explanation-contract]
+    architecture:
+      kind: ordered plan
+
+  - component: opportunities
+    core:
+      status: accepted
+      confidence: confirmed
+      title: Deterministic beneficial opportunities
+      summary: >-
+        Low-value beneficial events such as grants or conferences, with no
+        trade-off or minigame. They do not consume slots, ignoring them is not
+        punitive, and their timing uses broad seeded windows. Timing and
+        selection use separate deterministic random streams; balance tests can
+        disable them or fix a seed. Notifications persist.
+      references: [named-rng-streams]
+    architecture:
+      kind: seeded beneficial event
+
+  - component: time-and-controls
+    core:
+      status: accepted
+      confidence: confirmed
+      title: One authored speed, with pause
+      summary: >-
+        Real-time simulation at one authored speed with no player-facing
+        fast-forward. Pause is available with full planning and inspection while
+        paused; project and research panels do not pause automatically. Debug
+        builds include accelerated time controls, and headless tests advance
+        without wall-clock waiting.
+      references: [benchmark-timing]
+    architecture:
+      kind: pacing
+
+  - component: project-comparison-preview
+    core:
+      status: accepted
+      confidence: confirmed
+      title: Projected outcome previews
+      summary: >-
+        Selecting a project previews immediate continental and global emissions
+        changes, Finance and Mandate delta changes, icon totals after
+        completion, breakpoints reached, newly unlocked projects, estimated time
+        until affordable, and the active scaling calculation. The preview
+        separates guaranteed direct effects from conditional consequences. There
+        is no combined efficiency score and no automatic recommendation.
+      references: [scaling-and-breakpoints, explanation-contract, quantities-are-illustrative]
+    architecture:
+      kind: derived preview
+
+  - component: transparency-layers
+    core:
+      status: accepted
+      confidence: confirmed
+      title: Layered calculation explanations
+      summary: >-
+        Three layers over the same calculation data: a normal view (headline
+        effect, major icon contributions, important breakpoint, upkeep,
+        spillovers); an expanded explanation (base value, all modifiers, stacking
+        order, final result, evidence note, game-abstraction note); and a debug
+        view (complete state, full effect trace, event history, RNG streams,
+        command history).
+      references: [explanation-contract, quantities-are-illustrative]
+    architecture:
+      kind: derived presentation
+
+  - component: completion-and-records
+    core:
+      status: accepted
+      confidence: confirmed
+      title: Completion, timing, and records
+      summary: >-
+        Victory triggers when gross global emissions are zero and Finance and
+        Mandate deltas are non-negative. Ranked time is active, unpaused
+        simulation time. The end screen shows completion time, provisional
+        benchmark bracket, personal best, final deltas, replay validity, and a
+        concise causal recap. The score is time only.
+      references: [recoverability-and-victory, benchmark-timing, scoring-is-not-a-moral-grade]
+    architecture:
+      kind: end-state record
+
+  # Semantic command verbs. Each is a command on the simulation boundary, owned
+  # by the CFA coordinator, translated from UI input before state changes.
+
+  - action: queue-project
+    core:
+      status: accepted
+      confidence: confirmed
+      title: Queue a project
+      summary: Append a project to the planning queue for a chosen lead continent. Reserves no resources.
+    game_design:
+      architecture_links: [semantic-command-boundary]
+      owner_role: cfa-operator
+      costs: [none until the queue head starts]
+
+  - action: remove-queued-project
+    core:
+      status: accepted
+      confidence: confirmed
+      title: Remove a queued project
+      summary: Remove a project from the queue before it starts. No effect on resources.
+    game_design:
+      architecture_links: [semantic-command-boundary]
+      owner_role: cfa-operator
+
+  - action: reorder-queue
+    core:
+      status: accepted
+      confidence: confirmed
+      title: Reorder the queue
+      summary: Change the order of queued projects at any time.
+    game_design:
+      architecture_links: [semantic-command-boundary]
+      owner_role: cfa-operator
+
+  - action: cancel-active-project
+    core:
+      status: accepted
+      confidence: confirmed
+      title: Cancel an active project
+      summary: >-
+        Cancel a project under construction. Progress and partial rollout effects
+        are destroyed, no refund is given, and the slot is freed.
+    game_design:
+      architecture_links: [semantic-command-boundary]
+      owner_role: cfa-operator
+
+  - action: decommission-project
+    core:
+      status: accepted
+      confidence: confirmed
+      title: Decommission a completed project
+      summary: >-
+        Immediately decommission a completed project. Benefits, icons,
+        spillovers, and upkeep disappear with no refund; rebuild rules prevent
+        profitable toggling.
+    game_design:
+      architecture_links: [semantic-command-boundary]
+      owner_role: cfa-operator
+
+  - action: select-project-lead-continent
+    core:
+      status: accepted
+      confidence: confirmed
+      title: Select a project's lead continent
+      summary: Choose which continent leads a project, affecting its scope and which icons it draws on.
+    game_design:
+      architecture_links: [semantic-command-boundary]
+      owner_role: cfa-operator
+
+  - action: pause
+    core:
+      status: accepted
+      confidence: confirmed
+      title: Pause
+      summary: Pause the simulation. Full planning and inspection remain available while paused; ranked time stops.
+    game_design:
+      architecture_links: [semantic-command-boundary]
+      owner_role: cfa-operator
+
+  - action: resume
+    core:
+      status: accepted
+      confidence: confirmed
+      title: Resume
+      summary: Resume the simulation from pause.
+    game_design:
+      architecture_links: [semantic-command-boundary]
+      owner_role: cfa-operator
+
+  - action: claim-opportunity
+    core:
+      status: accepted
+      confidence: confirmed
+      title: Claim an opportunity
+      summary: Accept a beneficial opportunity. Consumes no slot and cannot create an unrecoverable penalty.
+    game_design:
+      architecture_links: [semantic-command-boundary]
+      owner_role: cfa-operator
+
+  # Tuning and playtest claims.
+
+  - tuning: recoverability-baselines
+    core:
+      status: provisional
+      confidence: confirmed
+      title: Positive Finance and Mandate baselines
+      summary: >-
+        Baseline continental Finance and Mandate income are positive so every
+        valid start has a path to victory and no run is unrecoverable.
+    game_design:
+      affected_mechanics: [finance, mandate]
+      intended_directional_effect: >-
+        Higher baselines make recovery easier and reduce tension; they must stay
+        positive to preserve the no-loss invariant.
+      bounds: strictly positive; exact values balance-driven and provisional
+      maturity: provisional
+
+  - tuning: run-length-target
+    core:
+      status: provisional
+      confidence: confirmed
+      title: Twenty-to-thirty-minute run
+      summary: >-
+        The prototype targets a satisfying 20-30 minute run at one authored
+        speed. Durations, accrual rates, and breakpoint spacing are tuned toward
+        that window.
+    game_design:
+      affected_mechanics: [time-and-controls, completion-and-records]
+      intended_directional_effect: >-
+        Faster accrual and shorter durations shorten the run; the target is a
+        window, not a minimum, and waiting should create planning, not idle time.
+      bounds: roughly 20 to 30 minutes of active, unpaused time
+      maturity: provisional
+
+  - playtest-claim: economy-is-satisfying
+    core:
+      status: proposed
+      confidence: confirmed
+      title: The core economy is satisfying at normal speed
+      summary: Normal-speed play remains engaging for 20-30 minutes, and waiting creates planning or anticipation rather than inactivity.
+    game_design:
+      claim: >-
+        Players find the loop understandable and engaging over a full run at one
+        authored speed, without wishing for a fast-forward control.
+      supports: [satisfying-core-economy, time-and-controls]
+
+  - playtest-claim: multiple-build-orders
+    core:
+      status: proposed
+      confidence: confirmed
+      title: More than one plausible build order wins
+      summary: Global gross emissions zero is reachable through more than one plausible build order.
+    game_design:
+      claim: >-
+        Seeded batch runs and playtests show at least two plausible winning build
+        orders, so no single opening dominates.
+      supports: [projects, programme-slots, planning-queue]
+
+  - playtest-claim: enabling-feels-strategic
+    core:
+      status: proposed
+      confidence: confirmed
+      title: Enabling investment feels strategic, not compulsory
+      summary: Enabling projects strengthen later deployment as a choice, not a tax every build order must pay.
+    game_design:
+      claim: >-
+        Players choose enabling investments for strategic advantage rather than
+        because the economy forces them, and direct reduction stays viable.
+      supports: [capacity-icons, projects, deploy-and-enable-both]

@@ -1,0 +1,20 @@
+entities:
+  - milestone: stage-5-release
+    core:
+      status: proposed
+      confidence: confirmed
+      title: Stage 5 - Release
+      summary: >-
+        A clear distinction between the counterfactual 1990 and the constrained
+        2020, educational claims reviewed against current evidence, regional
+        framing reviewed for hierarchy and deficit narratives, stable ruleset
+        versioning, a robust save-migration policy or explicit compatibility
+        boundaries, production-quality interface, audio, feedback, onboarding,
+        and accessibility, and privacy and service design completed before any
+        online scoring system.
+      references:
+        - counterfactual-not-easy
+        - scoring-is-not-a-moral-grade
+        - regional-framing-guardrail
+        - saves-logs-validation
+        - stage-4-2020-mode

@@ -1,0 +1,148 @@
+# Vision, intended learning direction, and the guardrails that keep the game
+# from teaching harmful or misleading causal lessons. Derived from the design
+# pack's learning-goals-and-guardrails document. The first prototype primarily
+# tests whether the economy is satisfying; these principles bound how it does so.
+
+entities:
+  - vision: satisfying-core-economy
+    core:
+      status: accepted
+      confidence: confirmed
+      title: Prove a satisfying core economy first
+      summary: >-
+        The first prototype exists to determine whether the core incremental
+        economy is satisfying over a 20-30 minute run at one authored speed.
+        Additional content, educational ambition, and technical elegance may not
+        be used to explain away an unsatisfying core loop. Everything else in the
+        model is subordinate to this test.
+      goals:
+        - Players understand emissions, Finance, Mandate, projects, icons, and programme slots.
+        - Players distinguish direct emissions reductions from enabling investments.
+        - Momentum builds through icon accumulation and explicit breakpoints.
+        - More than one plausible build order reaches global gross emissions zero.
+        - Normal-speed play stays engaging without player-facing speed controls.
+      references:
+        - projects
+        - capacity-icons
+        - programme-slots
+        - time-and-controls
+
+  - principle: systems-not-technologies
+    core:
+      status: accepted
+      confidence: confirmed
+      title: Emissions reduction is a systems problem
+      summary: >-
+        The eventual game should help players understand that decarbonisation is
+        a systems problem, not a list of isolated technologies. The prototype
+        supports the modest version: direct-reduction projects can be immediately
+        valuable while enabling projects strengthen later deployment.
+      references: [projects, capacity-icons]
+
+  - principle: deploy-and-enable-both
+    core:
+      status: accepted
+      confidence: confirmed
+      title: Immediate deployment and capacity building are both necessary
+      summary: >-
+        Enabling investment must feel strategic rather than compulsory. The
+        design risk is that enabling projects become a tax every build order must
+        pay; the economy is revised rather than expanded if playtests show that.
+      references: [projects, capacity-icons, enabling-feels-strategic]
+
+  - principle: installed-bottlenecks-differ
+    core:
+      status: accepted
+      confidence: confirmed
+      title: Sectors and continents have different installed-system bottlenecks
+      summary: >-
+        Infrastructure, institutions, labour, and knowledge determine deployment
+        speed. Continental differences are authored starting systems and
+        bottlenecks, never innate regional traits or development rankings.
+      references: [world-structure, capacity-icons, regional-framing-guardrail]
+
+  - principle: coordination-expands-programmes
+    core:
+      status: accepted
+      confidence: confirmed
+      title: Coordination capacity expands concurrent programmes
+      summary: >-
+        Reaching an Institutions milestone on a continent unlocks additional
+        global programme slots, so coordination capacity, not raw finance, gates
+        how much can run at once.
+      references: [programme-slots, capacity-icons]
+
+  - principle: regional-framing-guardrail
+    core:
+      status: accepted
+      confidence: confirmed
+      title: Regional framing must avoid deficit and hierarchy narratives
+      summary: >-
+        Do not imply that poorer regions are the main obstacle, that Europe or
+        North America are inherently more capable, that the Majority World is
+        homogeneous, that regional differences are permanent traits, that
+        development opposes decarbonisation, or that energy access should be
+        frozen. "Majority World" is provisional and must be reviewed before
+        public release. Icons represent installed capacity, never cultural or
+        governance superiority.
+      references: [world-structure, capacity-icons]
+
+  - principle: european-hq-is-contingent
+    core:
+      status: accepted
+      confidence: confirmed
+      title: The European headquarters is a contingent treaty fact
+      summary: >-
+        Europe hosts the initial CFA secretariat for contingent historical and
+        treaty reasons. It grants no innate regional bonus and implies no
+        ownership or superiority. Its only mechanical effect is that the first
+        programme can begin there.
+      references: [programme-slots, world-structure]
+
+  - principle: mandate-is-coordination-not-consent
+    core:
+      status: accepted
+      confidence: confirmed
+      title: Mandate is treaty coordination authority, not local consent
+      summary: >-
+        The CFA operates through ratified mandates; it coordinates and finances
+        programmes, relies on member institutions and local implementation, and
+        cannot simply bypass democratic authority. Prototype Mandate represents
+        global treaty coordination authority, not local public consent.
+      references: [mandate]
+
+  - principle: quantities-are-illustrative
+    core:
+      status: accepted
+      confidence: confirmed
+      title: Values are illustrative, not forecasts
+      summary: >-
+        All quantities are illustrative, rounded, and balance-driven, not
+        forecasts. Every project panel separates evidence, game abstraction, and
+        scenario mechanics so precise numbers never imply certainty.
+      references: [project-comparison-preview, transparency-layers]
+
+  - principle: counterfactual-not-easy
+    core:
+      status: accepted
+      confidence: confirmed
+      title: The 1990 counterfactual is not a claim that transition was easy
+      summary: >-
+        The 1990 scenario omits historical obstruction, crises, and political
+        conflict to isolate the economy; public-facing material must say so. The
+        absence of a loss state means mechanical recoverability, not that real
+        delay was harmless. Completion time is a replay metric, not a moral grade.
+      references: [recoverability-and-victory, scoring-is-not-a-moral-grade]
+
+  - principle: scoring-is-not-a-moral-grade
+    core:
+      status: accepted
+      confidence: confirmed
+      title: Scoring must not moralise
+      summary: >-
+        The end screen may compare completion time with benchmark brackets but
+        must not moralise, claim a false global percentile, hide handcrafted
+        early brackets, compare incompatible versions, or punish reading through
+        a separate score. Prefer "reference target" and "typical reference
+        range"; avoid moral medals, letter grades, or "you saved the planet".
+      references: [completion-and-records]

@@ -1,0 +1,226 @@
+# The simulation contract: the deterministic core's units, boundary, tick order,
+# effect vocabulary, scaling, lifecycle, randomness, validation, explanation, and
+# recoverability guarantees. Derived from the design pack's simulation contract.
+# The authoritative-run-state and the pure-simulation-core that owns it are
+# declared in production.yaml.
+
+entities:
+  - component: canonical-units
+    implementation:
+      status: confirmed
+      paths: [crates/nw-simulation/src/units.rs]
+      tests: [cargo test -p nw-simulation]
+    core:
+      status: accepted
+      confidence: confirmed
+      title: Integer and fixed-point canonical units
+      summary: >-
+        Emissions are simplified, rounded GtCO2e/year (stored as integers);
+        Finance is abstract global CFA units; Mandate is abstract global points
+        with current, maximum, income, and continental contributions; icons are
+        non-negative continental integer stocks; time is canonical integer ticks.
+        Authoritative state uses integers or fixed-point, never floating-point
+        outcomes, so native and WASM builds cannot diverge. While removal is
+        absent, emissions are "gross"/"global", never "net".
+      references: [integer-fixed-point-math]
+    architecture:
+      kind: value types
+
+  - component: semantic-command-boundary
+    core:
+      status: accepted
+      confidence: confirmed
+      title: Semantic command boundary
+      summary: >-
+        Clients drive the simulation through semantic commands, not UI events:
+        QueueProject, RemoveQueuedProject, ReorderQueue, CancelActiveProject,
+        DecommissionProject, SelectProjectLeadContinent, Pause, Resume, and
+        ClaimOpportunity. Every command returns a structured accepted/rejected
+        result; rejected commands consume no resources, alter no state, advance
+        no time, and carry machine- and human-readable reasons.
+      references: [pure-simulation-core, command-log-authoritative]
+    architecture:
+      kind: command validator
+      accepts:
+        - queue-project
+        - remove-queued-project
+        - reorder-queue
+        - cancel-active-project
+        - decommission-project
+        - select-project-lead-continent
+        - pause
+        - resume
+        - claim-opportunity
+
+  - component: fixed-tick-order
+    core:
+      status: accepted
+      confidence: confirmed
+      title: Single documented tick order
+      summary: >-
+        Each tick applies logged commands in order, resolves pause/resume (and if
+        paused emits explanations and stops), accrues Finance and Mandate,
+        advances construction, recalculates partial rollout effects, completes
+        eligible projects and applies their effects and icons, recalculates
+        prerequisites/scaling/breakpoints/unlocks, resolves programme-slot
+        milestones, advances opportunity timing and creation/expiry, attempts the
+        FIFO queue head, recalculates derived totals and deltas, tests victory,
+        and emits hashes and explanation events. The order may be refined but
+        must remain singular, documented, and tested.
+      references: [semantic-command-boundary, project-lifecycle, recoverability-and-victory]
+    architecture:
+      kind: update loop
+
+  - component: controlled-effect-vocabulary
+    core:
+      status: accepted
+      confidence: confirmed
+      title: Controlled effect vocabulary
+      summary: >-
+        Projects act only through a controlled family of effects: AddIcon,
+        RemoveIcon, ReduceSectorEmissions, AddFinanceIncome, AddMandateIncome,
+        AddMandateMaximum, AddMaintenance, ModifyProjectCost,
+        ModifyProjectDuration, AddProgrammeSlotMilestoneProgress, UnlockProject,
+        AddLocalEffect, AddSharedEffect, AddTransferredEffect, AddBreakpoint, and
+        AddScalingRule. Every effect declares an explicit scope (global, lead
+        continent, named continent, all continents, authored subset, named
+        sector, or authored spillover target); no effect silently becomes global.
+      references: [data-defined-effect-vocabulary, scaling-and-breakpoints]
+    architecture:
+      kind: effect schema
+
+  - component: scaling-and-breakpoints
+    core:
+      status: accepted
+      confidence: confirmed
+      title: Scaling and authored breakpoints
+      summary: >-
+        Projects may define prerequisites, continuous scaling from a controlled
+        set of functions, and discrete authored breakpoints. Every calculation
+        exposes base value, contributing icons, modifier names, modifier order,
+        final value, and next breakpoint; previews and debug traces use the same
+        output. Cost curves are limited to linear, exponential, and economies of
+        scale followed by depletion.
+      references: [controlled-effect-vocabulary, explanation-contract]
+    architecture:
+      kind: derived calculation
+
+  - component: project-lifecycle
+    core:
+      status: accepted
+      confidence: confirmed
+      title: Project lifecycle
+      summary: >-
+        Queued projects reserve no resources and occupy no slot. Active projects
+        pay full costs upfront and occupy one slot, advancing only while
+        unpaused. Cancelling while active destroys progress and partial effects
+        with no refund and frees the slot. Completed projects apply completion
+        and recurring effects and may be decommissioned. Decommissioning removes
+        benefits, icons, spillovers, and upkeep with no refund; rebuild rules
+        must prevent resource creation or cost bypass.
+      references: [programme-slots, planning-queue]
+    architecture:
+      kind: lifecycle state machine
+
+  - component: named-rng-streams
+    core:
+      status: accepted
+      confidence: confirmed
+      title: Independent named RNG streams
+      summary: >-
+        Three independent deterministic streams -- starting_variation,
+        opportunity_timing, and opportunity_selection -- each derive from the
+        scenario seed plus a stable identifier. Systems may not share streams;
+        adding a draw to one must not perturb another.
+      references: [named-deterministic-rng-streams]
+    architecture:
+      kind: deterministic randomness
+
+  - component: recoverability-and-victory
+    core:
+      status: accepted
+      confidence: confirmed
+      title: Recoverability invariants and victory
+      summary: >-
+        Baseline Finance and Mandate income are positive; no random event creates
+        an unrecoverable penalty; there is no loss state; every valid start has a
+        path to victory. Victory requires gross global emissions of zero and
+        non-negative Finance and Mandate income deltas.
+      references: [no-loss-state-prototype, recoverability-baselines]
+    architecture:
+      kind: invariant
+
+  - component: explanation-contract
+    core:
+      status: accepted
+      confidence: confirmed
+      title: Structured explanation trace
+      summary: >-
+        Every visible state change carries a structured trace: tick, affected
+        value, previous and new values, direct cause, modifiers, source, scope,
+        and direct/conditional/derived status. This one output powers previews,
+        formulas, notifications, the causal recap, and debug inspection, so the
+        explanation UI cannot diverge from the calculation.
+      references: [scaling-and-breakpoints]
+    architecture:
+      kind: derived trace
+
+  - component: saves-logs-validation
+    implementation:
+      status: confirmed
+      paths: [crates/nw-persistence/src]
+      tests: [cargo test -p nw-persistence]
+    core:
+      status: accepted
+      confidence: confirmed
+      title: Saves, logs, and replay validation
+      summary: >-
+        The authoritative validation record holds ruleset and content versions,
+        scenario identifier and seed, all accepted and rejected commands with
+        ticks, pause/resume transitions, periodic and final state hashes, the
+        completion tick, and the validation result. Validation recreates the
+        initial state, replays the commands, checks periodic hashes, and confirms
+        the final hash and victory tick. A snapshot may cache state for fast
+        loading, but the command log is authoritative; compatibility is
+        version-specific and old records are archived, not converted.
+      references: [command-log-authoritative, named-rng-streams]
+    architecture:
+      kind: validation record
+
+  - component: benchmark-timing
+    core:
+      status: accepted
+      confidence: confirmed
+      title: Benchmark timing
+      summary: >-
+        Ranked time advances only when the simulation advances; pause stops it;
+        planning while paused is allowed; panels do not pause automatically;
+        hardware frame rate cannot affect it; and debug acceleration invalidates
+        ranked records unless explicitly supported.
+      references: [completion-and-records]
+    architecture:
+      kind: ranked clock
+
+  - contract: determinism-and-test-obligations
+    core:
+      status: accepted
+      confidence: confirmed
+      title: Determinism and test obligations
+      summary: >-
+        The simulation is deterministic given ruleset version, content version,
+        scenario identifier, scenario seed, and ordered timestamped commands;
+        wall-clock time, frame rate, rendering, input polling order, locale, and
+        platform APIs may not affect authoritative results. Required tests cover
+        deterministic replay across builds, RNG stream isolation, cancellation
+        and decommission cleanup, queue FIFO and blocked-head explanations, slot
+        milestone triggers, scaling and breakpoint order, victory validation,
+        recoverability, preview-equals-realised-effect, version-specific replay
+        rejection, pause timing, and seeded batch runs showing at least two
+        plausible winning build orders.
+      references:
+        - fixed-tick-order
+        - named-rng-streams
+        - project-lifecycle
+        - saves-logs-validation
+        - recoverability-and-victory
+        - multiple-build-orders

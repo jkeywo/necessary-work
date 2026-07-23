@@ -1,0 +1,24 @@
+entities:
+  - milestone: stage-3-alpha-1990
+    core:
+      status: proposed
+      confidence: confirmed
+      title: Stage 3 - Alpha 1, complete 1990 mode
+      summary: >-
+        Produce a replayable, coherent version of the 1990 scenario: the full
+        1990 project catalogue, stable balancing with multiple viable strategies,
+        refined regional starting conditions, improved opportunity variety,
+        complete project evidence panels, versioned local records, benchmark
+        brackets increasingly derived from validated developer, bot, and playtest
+        runs, archived records for prior rulesets, and wider native Windows
+        testing with a supported WASM build. Retained exclusions: no loss state,
+        no climate crises, no Protection or Legitimacy, no local-consent
+        simulation, no carbon removal, no dynamic sector baselines, no online
+        leaderboard, and no offline progress.
+      references:
+        - projects
+        - opportunities
+        - completion-and-records
+        - saves-logs-validation
+        - bevy-client
+        - stage-2-vertical-slice

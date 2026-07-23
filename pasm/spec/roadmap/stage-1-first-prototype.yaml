@@ -1,0 +1,46 @@
+# Stage 1 develops the game by proving the core incremental economy before any
+# more politically or educationally demanding content. It is the current stage.
+
+entities:
+  - milestone: stage-1-first-prototype
+    core:
+      status: accepted
+      confidence: confirmed
+      title: Stage 1 - First prototype
+      summary: >-
+        Determine whether the core economy is satisfying over a 20-30 minute run.
+        Scenario: a counterfactual 1990 with the CFA administrative headquarters
+        in Europe (no inherent bonus), the first programme able to begin
+        immediately, no loss state, victory at global gross emissions zero with
+        non-negative Finance and Mandate deltas, no carbon removal, and fixed
+        sector baselines. Included systems: three continents with three sectors
+        each, Finance and Mandate, four icon families, ~12 projects, one-to-three
+        global programme slots gated by Institutions milestones, the planning
+        queue, previews, layered explanations, pause-with-planning, deterministic
+        opportunities, save/replay validation, and an end-screen causal recap.
+        Art, interface, values, prose, geography, and event variety are
+        deliberately rough; the simulation, queue, previews, traces, determinism,
+        save/replay, and completion timing must be reliable.
+      goals:
+        - The loop is understandable.
+        - It supports multiple plausible build orders.
+        - Enabling investment feels strategic rather than compulsory.
+        - Normal-speed play stays engaging for 20-30 minutes.
+        - Waiting creates planning or anticipation rather than inactivity.
+      references:
+        - satisfying-core-economy
+        - world-structure
+        - finance
+        - mandate
+        - capacity-icons
+        - projects
+        - programme-slots
+        - planning-queue
+        - opportunities
+        - project-comparison-preview
+        - transparency-layers
+        - completion-and-records
+        - determinism-and-test-obligations
+        - economy-is-satisfying
+        - multiple-build-orders
+        - enabling-feels-strategic

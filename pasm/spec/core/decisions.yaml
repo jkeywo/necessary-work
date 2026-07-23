@@ -1,0 +1,173 @@
+# Design and technical decisions carried over from the design pack, each
+# recording what it binds and why. These are the decisions the rest of the spec
+# assumes; changing one is a deliberate act with a diff that says so.
+
+entities:
+  - reference: design-pack-and-discussion
+    core:
+      status: accepted
+      confidence: confirmed
+      title: Source design pack and initial discussion
+      summary: >-
+        This spec is the living model derived from the prototype design pack
+        (six documents, archived under docs/design) and the initial design
+        discussion. The design pack consolidates the decisions; details not
+        needed to begin implementation were deferred there rather than invented,
+        and the same restraint applies here.
+      rationale:
+        - "Design pack: docs/design/ (development roadmap, feature list, simulation contract, learning goals and guardrails, research and sources, production assumptions)."
+        - "Initial design discussion: https://chatgpt.com/share/6a61cd47-2e68-83eb-a48a-47c250b5a6f9"
+
+  - decision: pure-rust-simulation-boundary
+    core:
+      status: accepted
+      confidence: confirmed
+      title: The simulation is a pure Rust library behind a command/state interface
+      summary: >-
+        The simulation is a pure Rust library independent of Bevy, rendering, the
+        OS, save UI, and network code, so the same core serves the native client,
+        the WASM client, headless tests, deterministic replay, batch balance
+        runs, and debug inspection. Dependency direction keeps Bevy out of the
+        simulation.
+      references: [pure-simulation-core, bevy-client]
+
+  - decision: integer-fixed-point-math
+    core:
+      status: accepted
+      confidence: confirmed
+      title: Integer and fixed-point rules math only
+      summary: >-
+        All authoritative arithmetic uses integers or fixed-point, never
+        floating-point outcomes, so native x86-64 and wasm32 builds cannot
+        diverge. Emissions are stored as integers and displayed rounded.
+      references: [canonical-units]
+
+  - decision: data-defined-effect-vocabulary
+    core:
+      status: accepted
+      confidence: confirmed
+      title: Projects act only through a controlled, data-defined effect vocabulary
+      summary: >-
+        Every project effect is one of a controlled family with an explicit
+        scope; no effect silently becomes global. A project using existing
+        mechanics is content extension; a new effect type or causal system is
+        mechanic extension and requires architecture review. Rhai scripting is
+        deferred and only ever for behaviour the vocabulary cannot express.
+      references: [controlled-effect-vocabulary]
+
+  - decision: ron-content-format
+    core:
+      status: accepted
+      confidence: confirmed
+      title: Authored content is human-reviewable structured data
+      summary: >-
+        Content is human-reviewable structured data (RON chosen for first-class
+        Rust support) with schema validation, stable ids, explicit units and
+        scopes, source metadata, linting, and content hashes. No arbitrary
+        scripts through Alpha 1.
+      references: [authored-content-catalogue]
+
+  - decision: single-authored-speed
+    core:
+      status: accepted
+      confidence: confirmed
+      title: One authored speed, no player-facing fast-forward
+      summary: >-
+        The simulation runs in real time at one authored speed with pause but no
+        player-facing fast-forward, because the prototype must prove that
+        normal-speed pacing stands on its own. Debug builds may accelerate time,
+        which invalidates ranked records unless explicitly supported.
+      references: [time-and-controls, benchmark-timing]
+
+  - decision: no-loss-state-prototype
+    core:
+      status: accepted
+      confidence: confirmed
+      title: The 1990 prototype cannot be lost
+      summary: >-
+        There is no loss state, no climate crises, and no unrecoverable
+        penalties; every valid start has a path to victory. This isolates the
+        economy for testing and reflects a deliberate scope boundary, not a claim
+        that real delay was harmless. Genuine loss conditions arrive only with
+        2020 mode.
+      references: [recoverability-and-victory, counterfactual-not-easy]
+
+  - decision: named-deterministic-rng-streams
+    core:
+      status: accepted
+      confidence: confirmed
+      title: Independent named RNG streams
+      summary: >-
+        Randomness uses independent named streams (starting_variation,
+        opportunity_timing, opportunity_selection), each derived from the seed
+        plus a stable identifier, so adding a draw to one system cannot perturb
+        another and balance tests can fix or disable them.
+      references: [named-rng-streams]
+
+  - decision: command-log-authoritative
+    core:
+      status: accepted
+      confidence: confirmed
+      title: The command log is the authoritative save
+      summary: >-
+        A run's authoritative record is its scenario, seed, and ordered
+        timestamped semantic command log. Snapshots may cache state for fast
+        loading, but replay from the command log is authoritative. Compatibility
+        is version-specific; old records are archived, not converted.
+      references: [saves-logs-validation, semantic-command-boundary]
+
+  - decision: workspace-crate-architecture
+    core:
+      status: accepted
+      confidence: confirmed
+      title: Six-crate headless-first workspace
+      summary: >-
+        The workspace is nw-content (schemas, loading, validation, project data),
+        nw-simulation (deterministic pure core), nw-persistence (snapshots, logs,
+        records, archive), nw-headless (replay, bots, batch runs, benchmarks),
+        nw-tools (content linting and balance reports), and nw-client (Bevy
+        application). Content and simulation never depend on the client.
+      references:
+        - pure-simulation-core
+        - authored-content-catalogue
+        - saves-logs-validation
+        - headless-toolchain
+        - content-tooling
+        - bevy-client
+
+  - decision: bevy-deferred-until-ui-spike
+    core:
+      status: accepted
+      confidence: confirmed
+      title: Bevy is deferred until the UI spike
+      summary: >-
+        The nw-client crate is scaffolded without Bevy until the deterministic
+        core, one end-to-end project, and the calculation/preview layer are
+        proven (early implementation order). Keeping Bevy out of the workspace
+        until then keeps CI fast and makes it structurally impossible for Bevy to
+        leak into the simulation before the boundary is deliberately crossed.
+      references: [bevy-client, pure-simulation-boundary-note]
+
+  - decision: score-is-time-only
+    core:
+      status: accepted
+      confidence: confirmed
+      title: The score is completion time only
+      summary: >-
+        The only score is active, unpaused completion time, compared against
+        provisional handcrafted benchmark brackets that are replaced by an
+        empirical reference distribution once the sample is large and
+        representative. Scoring must not moralise or claim a false percentile.
+      references: [completion-and-records, scoring-is-not-a-moral-grade]
+
+  - decision: pure-simulation-boundary-note
+    core:
+      status: accepted
+      confidence: confirmed
+      title: The boundary is enforced by crate structure
+      summary: >-
+        The Bevy-out-of-simulation rule is enforced structurally: nw-simulation
+        and nw-content declare no dependency on nw-client, and Bevy is absent
+        from the workspace until the client spike, so the simulation cannot
+        acquire a rendering dependency by accident.
+      references: [pure-simulation-core, bevy-client]

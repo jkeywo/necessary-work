@@ -1,0 +1,25 @@
+[package]
+name = "nw-client"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "nw-client"
+path = "src/main.rs"
+
+# The Bevy dependency is deliberately not wired in yet. The design roadmap puts
+# the main dashboard after the deterministic core, one end-to-end project, and
+# the calculation/preview layer are proven (early implementation order, step
+# 13). Keeping Bevy out of the workspace until the UI spike keeps CI fast and,
+# more importantly, makes it structurally impossible for Bevy to leak into the
+# simulation before the boundary is deliberately crossed.
+[dependencies]
+nw-content = { workspace = true }
+nw-simulation = { workspace = true }
+nw-persistence = { workspace = true }
+anyhow = { workspace = true }
+
+[lints]
+workspace = true

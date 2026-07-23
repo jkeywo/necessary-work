@@ -1,0 +1,21 @@
+[project]
+name = "necessary-work-tooling"
+version = "0.1.0"
+description = "Development tooling for The Necessary Work: the PASM architecture model."
+readme = "README.md"
+requires-python = ">=3.11"
+# PASM lives in its own repository (shared across jkeywo's games). What stays
+# here is pasm/spec -- the model of *this* codebase. Pinned to a rev: the
+# scanner's findings are a gate, so which version produced them matters.
+dependencies = [
+  "pasm @ git+https://github.com/jkeywo/pasm@de8a7bfce3aefa799eea51f8e5a2708e996e8b6e",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+# This project ships no Python of its own; installing it is how the pinned PASM
+# and its dependencies arrive.
+[tool.setuptools]
+packages = []

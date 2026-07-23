@@ -1,0 +1,39 @@
+[workspace]
+resolver = "2"
+members = [
+  "crates/nw-content",
+  "crates/nw-simulation",
+  "crates/nw-persistence",
+  "crates/nw-headless",
+  "crates/nw-tools",
+  "crates/nw-client",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+repository = "https://github.com/jkeywo/necessary-work"
+
+[workspace.dependencies]
+# Internal crates. Dependency direction keeps the simulation pure: content and
+# simulation never depend on the client, and Bevy never reaches the simulation.
+nw-content = { path = "crates/nw-content" }
+nw-simulation = { path = "crates/nw-simulation" }
+nw-persistence = { path = "crates/nw-persistence" }
+
+# External crates
+serde = { version = "1", features = ["derive"] }
+ron = "0.8"
+postcard = { version = "1", features = ["alloc"] }
+anyhow = "1"
+thiserror = "2"
+clap = { version = "4", features = ["derive"] }
+
+[workspace.lints.rust]
+unsafe_code = "deny"
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1

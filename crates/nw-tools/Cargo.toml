@@ -1,0 +1,18 @@
+[package]
+name = "nw-tools"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "nw-tools"
+path = "src/main.rs"
+
+[dependencies]
+nw-content = { workspace = true }
+clap = { workspace = true }
+anyhow = { workspace = true }
+
+[lints]
+workspace = true

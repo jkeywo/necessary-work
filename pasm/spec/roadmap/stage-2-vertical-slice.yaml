@@ -1,0 +1,23 @@
+entities:
+  - milestone: stage-2-vertical-slice
+    core:
+      status: proposed
+      confidence: confirmed
+      title: Stage 2 - Vertical slice
+      summary: >-
+        Demonstrate intended production quality and confirm the prototype economy
+        survives richer content and presentation. Adds representative final
+        visual direction, stronger sound and completion feedback, refined project
+        cards and side panels, polished onboarding, better project context and
+        source presentation, milestone activation profiles, more robust
+        accessibility, expanded playtest instrumentation, empirical benchmark
+        data collection, and one carefully authored example of each planned
+        project behaviour using the existing effect vocabulary. Gate:
+        presentation must improve comprehension and satisfaction without
+        concealing a weak or dominant economy.
+      references:
+        - satisfying-core-economy
+        - projects
+        - controlled-effect-vocabulary
+        - completion-and-records
+        - stage-1-first-prototype

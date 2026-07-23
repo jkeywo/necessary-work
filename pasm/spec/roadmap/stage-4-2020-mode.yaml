@@ -1,0 +1,23 @@
+entities:
+  - milestone: stage-4-2020-mode
+    core:
+      status: proposed
+      confidence: confirmed
+      title: Stage 4 - 2020 mode
+      summary: >-
+        Introduce the consequences of delayed action and the political and
+        protective systems absent from 1990: a genuine loss condition,
+        Protection, Legitimacy, climate crises, sector baseline growth or
+        decline, stronger path dependence, distributional consequences, local
+        legitimacy and delivery constraints, adaptation, carbon removal (only
+        after its role, limits, and risks are modelled clearly), and historically
+        grounded obstruction and institutional constraints. This requires a
+        separate design pass, not merely more content for the 1990 economy, and a
+        new architecture review for each new causal system.
+      references:
+        - no-loss-state-prototype
+        - recoverability-and-victory
+        - mandate-is-coordination-not-consent
+        - stage-3-alpha-1990
+    architecture:
+      kind: future mode

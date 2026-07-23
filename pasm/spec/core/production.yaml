@@ -1,0 +1,153 @@
+# Production architecture: the runtime system, the pure simulation core and the
+# authoritative state it owns, the authored content catalogue, the headless
+# toolchain and content tooling, the presentation client, and CI. The workspace
+# keeps Bevy out of the simulation. Derived from the design pack's production
+# assumptions and the architectural boundary in the simulation contract.
+
+entities:
+  - system: necessary-work-runtime
+    core:
+      status: accepted
+      confidence: confirmed
+      title: The Necessary Work runtime
+      summary: >-
+        A single-player real-time incremental strategy game about coordinating
+        global decarbonisation through the fictional Common Future Authority. A
+        shared, deterministic pure-Rust simulation is driven by a presentation
+        client and by headless tools, all reading the same authored content.
+      references:
+        - pure-simulation-core
+        - authored-content-catalogue
+        - saves-logs-validation
+        - headless-toolchain
+        - content-tooling
+        - bevy-client
+        - ci-and-validation
+
+  - component: pure-simulation-core
+    implementation:
+      status: confirmed
+      paths: [crates/nw-simulation/src]
+      tests: [cargo test -p nw-simulation]
+    core:
+      status: accepted
+      confidence: confirmed
+      title: Pure simulation core (nw-simulation)
+      summary: >-
+        A pure Rust library independent of Bevy, rendering, the OS, save UI, and
+        network code, exposing a narrow command/state interface. It serves the
+        native client, the WASM client, headless tests, deterministic replay,
+        batch balance simulations, and debug inspection. The dependency direction
+        keeps Bevy out of the simulation.
+      references: [semantic-command-boundary, fixed-tick-order, canonical-units]
+    architecture:
+      kind: authoritative simulation
+      authority: authoritative
+      owns: [authoritative-run-state]
+
+  - state: authoritative-run-state
+    core:
+      status: accepted
+      confidence: confirmed
+      title: Authoritative run state
+      summary: >-
+        The simulation alone owns: current tick and pause state; ruleset and
+        content versions; scenario seed; named RNG stream states; Finance;
+        Mandate current and maximum; continental contribution rates; nine sector
+        emission rates; four icon stocks per continent; project availability and
+        lifecycle state; active programme-slot count; milestone progress;
+        opportunity state; the event and explanation trace; and victory state.
+      references: [canonical-units, named-rng-streams]
+    architecture:
+      classification: authoritative
+      owner: pure-simulation-core
+
+  - component: authored-content-catalogue
+    implementation:
+      status: confirmed
+      paths: [crates/nw-content/src]
+      tests: [cargo test -p nw-content]
+    core:
+      status: accepted
+      confidence: confirmed
+      title: Authored content catalogue (nw-content)
+      summary: >-
+        Human-reviewable structured data (RON) with schema validation, stable
+        ids, explicit units and scopes, source metadata, linting, and content
+        hashes. No arbitrary scripts through Alpha 1. The simulation consumes
+        this catalogue; the catalogue depends on nothing else in the workspace.
+      references: [projects, controlled-effect-vocabulary, ron-content-format]
+    architecture:
+      kind: authored data catalogue
+      validates: [projects]
+
+  - component: headless-toolchain
+    implementation:
+      status: confirmed
+      paths: [crates/nw-headless]
+    core:
+      status: accepted
+      confidence: confirmed
+      title: Headless toolchain (nw-headless, binary `nw`)
+      summary: >-
+        Deterministic replay validation, seeded bots, batch balance runs, and
+        benchmark timing. It advances the simulation without wall-clock waiting,
+        so determinism and balance can be tested without a window.
+      references: [saves-logs-validation, determinism-and-test-obligations]
+    architecture:
+      kind: developer toolchain
+
+  - component: content-tooling
+    implementation:
+      status: confirmed
+      paths: [crates/nw-tools]
+    core:
+      status: accepted
+      confidence: confirmed
+      title: Content tooling (nw-tools)
+      summary: >-
+        Content linting and balance reports over the authored catalogue. It reads
+        content only, never the client or live simulation state, so it can gate
+        authored data in CI.
+      references: [authored-content-catalogue]
+    architecture:
+      kind: content linter
+
+  - component: bevy-client
+    implementation:
+      status: declared
+      paths: [crates/nw-client]
+    core:
+      status: accepted
+      confidence: confirmed
+      title: Presentation client (nw-client)
+      summary: >-
+        A Bevy application (native desktop plus a narrower WASM layout) that
+        renders simulation state and maps input to semantic commands. It is a
+        non-authoritative view: it never owns authoritative state. The Bevy
+        dependency is deferred until the UI spike so it cannot leak into the
+        simulation before the boundary is deliberately crossed.
+      references: [semantic-command-boundary, bevy-deferred-until-ui-spike]
+    architecture:
+      kind: presentation client
+      authority: non-authoritative
+      accepts: [pure-simulation-core]
+      platforms:
+        allowed: [windows-native-desktop, wasm-browser]
+
+  - component: ci-and-validation
+    implementation:
+      status: confirmed
+      paths: [.github/workflows/ci.yml]
+    core:
+      status: accepted
+      confidence: confirmed
+      title: "CI: PASM validation, format, lint, tests"
+      summary: >-
+        Every push and pull request validates the PASM spec, checks formatting,
+        runs clippy as an error gate, and runs the workspace test suite. The
+        WASM build and GitHub Pages deploy are added when the browser client
+        exists.
+      references: [determinism-and-test-obligations]
+    architecture:
+      kind: continuous integration

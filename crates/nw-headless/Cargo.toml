@@ -1,0 +1,20 @@
+[package]
+name = "nw-headless"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "nw"
+path = "src/main.rs"
+
+[dependencies]
+nw-content = { workspace = true }
+nw-simulation = { workspace = true }
+nw-persistence = { workspace = true }
+clap = { workspace = true }
+anyhow = { workspace = true }
+
+[lints]
+workspace = true
