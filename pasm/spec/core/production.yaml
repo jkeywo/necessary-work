@@ -119,19 +119,23 @@ entities:
 
   - component: bevy-client
     implementation:
-      status: declared
-      paths: [crates/nw-client]
+      status: confirmed
+      paths: [crates/nw-client/src/main.rs, crates/nw-client/src/ui.rs]
     core:
       status: accepted
       confidence: confirmed
       title: Presentation client (nw-client)
       summary: >-
-        A Bevy application (native desktop plus a narrower WASM layout) that
-        renders simulation state and maps input to semantic commands. It is a
-        non-authoritative view: it never owns authoritative state. The Bevy
-        dependency is deferred until the UI spike so it cannot leak into the
-        simulation before the boundary is deliberately crossed.
-      references: [semantic-command-boundary, bevy-deferred-until-ui-spike]
+        A Bevy application (native desktop now; a narrower WASM layout later)
+        that renders simulation state and maps clicks to semantic commands. It
+        is a non-authoritative view: it never owns authoritative state, and
+        every number it shows comes from the simulation's state, calc traces,
+        and previews. The UI-spike dashboard covers the main-dashboard surface:
+        global totals with deltas, three continental summaries, active
+        programmes, the FIFO queue with its blocked-head explanation,
+        opportunities and events, available projects, and the project detail
+        side panel with lead selection and projected previews.
+      references: [semantic-command-boundary, bevy-deferred-until-ui-spike, project-comparison-preview]
     architecture:
       kind: presentation client
       authority: non-authoritative

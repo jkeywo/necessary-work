@@ -27,8 +27,11 @@ planning queue, programme-slot milestones, opportunities, calculation traces,
 projected previews, and command-log replay validation, driving a 13-project
 authored catalogue. Two seeded bot strategies (deploy-first and capacity-first)
 both reach victory in ~20–23 minutes of simulated time at the authored speed,
-and every run's record replay-validates. What remains of Stage 1 is the Bevy
-dashboard spike and structured human playtests — see
+and every run's record replay-validates. The Bevy dashboard is playable
+(`cargo run -p nw-client`): global totals, continental summaries, active
+programmes, the queue with its blocked-head explanations, opportunities, and
+per-project previews with sources. What remains of Stage 1 is save/load and
+end-screen recap UI, onboarding, and structured human playtests — see
 [`pasm/spec/roadmap`](pasm/spec/roadmap). The recorded design lives in
 [`pasm/spec/core`](pasm/spec/core); the source design pack in
 [`docs/design`](docs/design).
@@ -71,6 +74,7 @@ PASM tooling.
 
 ```bash
 cargo test --workspace
+cargo run -p nw-client                 # play the prototype (NW_SEED=n to fix a seed)
 cargo run --release -p nw-headless -- run --seed 1 --strategy deploy-first
 cargo run --release -p nw-headless -- batch --count 4   # both build orders must win
 cargo run -p nw-tools -- lint          # lint the authored content catalogue

@@ -139,14 +139,14 @@ entities:
     core:
       status: accepted
       confidence: confirmed
-      title: Bevy is deferred until the UI spike
+      title: Bevy was deferred until the UI spike, then crossed deliberately
       summary: >-
-        The nw-client crate is scaffolded without Bevy until the deterministic
-        core, one end-to-end project, and the calculation/preview layer are
-        proven (early implementation order). Keeping Bevy out of the workspace
-        until then keeps CI fast and makes it structurally impossible for Bevy to
-        leak into the simulation before the boundary is deliberately crossed.
-      references: [bevy-client, pure-simulation-boundary-note]
+        The nw-client crate was scaffolded without Bevy until the deterministic
+        core, the full project catalogue, and the calculation/preview layer were
+        proven — which kept the boundary structurally uncrossable during core
+        development. The UI spike then added Bevy 0.16 to nw-client and only
+        nw-client; the simulation and content crates still cannot reach it.
+      references: [bevy-client, pure-simulation-boundary-note, bevy-016-immediate-rebuild-dashboard]
 
   - decision: score-is-time-only
     core:
@@ -228,7 +228,26 @@ entities:
       title: The boundary is enforced by crate structure
       summary: >-
         The Bevy-out-of-simulation rule is enforced structurally: nw-simulation
-        and nw-content declare no dependency on nw-client, and Bevy is absent
-        from the workspace until the client spike, so the simulation cannot
+        and nw-content declare no dependency on nw-client, and the Bevy
+        dependency lives in nw-client's manifest alone, so the simulation cannot
         acquire a rendering dependency by accident.
       references: [pure-simulation-core, bevy-client]
+
+  - decision: bevy-016-immediate-rebuild-dashboard
+    core:
+      status: accepted
+      confidence: confirmed
+      title: Bevy 0.16 dashboard rebuilt whole on every state change
+      summary: >-
+        The spike client uses Bevy 0.16 UI nodes and rebuilds the entire dynamic
+        dashboard tree whenever the simulation ticks or the player acts — an
+        immediate-mode approach in retained clothing. At four authored ticks per
+        second the rebuild is cheap, and it makes desynchronised UI structurally
+        impossible: there is no per-widget update path to forget. The simulation
+        advances on Bevy's fixed timestep at the scenario's authored speed, so
+        the client has no speed authority; pause flows through the same
+        Pause/Resume commands as any client. Dev-only env hooks (NW_SEED,
+        NW_SMOKE_SECS, NW_SHOT, NW_DEMO) let CI and agents boot, screenshot, and
+        exit the app without a human, and touch nothing authoritative. Revisit
+        the rebuild granularity only if profiling ever says so.
+      references: [bevy-client, single-authored-speed, semantic-command-boundary]
