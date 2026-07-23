@@ -1,5 +1,7 @@
 # The Necessary Work
 
+Play now: **https://jkeywo.github.io/necessary-work/**
+
 A single-player, real-time incremental strategy game about coordinating global
 decarbonisation through the fictional **Common Future Authority (CFA)**. You
 reduce global gross greenhouse-gas emissions to zero by financing and
@@ -80,12 +82,25 @@ cargo run --release -p nw-headless -- batch --count 4   # both build orders must
 cargo run -p nw-tools -- lint          # lint the authored content catalogue
 ```
 
-## CI
+On Windows, `build_and_run.bat` builds and launches the release client.
+
+To build the browser client locally (wasm-bindgen-cli pinned to the locked
+crate version):
+
+```bash
+cargo build --release --target wasm32-unknown-unknown -p nw-client
+wasm-bindgen --target web --no-typescript --out-dir web/pkg target/wasm32-unknown-unknown/release/nw-client.wasm
+python -m http.server 8572 --directory web   # then open http://localhost:8572
+```
+
+## CI and deployment
 
 Every push and pull request validates the PASM spec, checks formatting, runs
-clippy as an error gate, and runs the workspace test suite (see
-[`.github/workflows/ci.yml`](.github/workflows/ci.yml)). The WASM build and a
-GitHub Pages deploy are added once the browser client exists.
+clippy as an error gate, runs the workspace test suite, and builds the browser
+client for WebAssembly. A successful build on `main` deploys the browser client
+straight to GitHub Pages (see
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml)) — no separate
+`gh-pages` branch to manage.
 
 ## License
 

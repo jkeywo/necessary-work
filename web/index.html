@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>The Necessary Work — prototype</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #0f1217;
+      color: #dee1e6;
+      font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      outline: none;
+    }
+    #loading {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      text-align: center;
+      padding: 1rem;
+    }
+    #loading h1 { font-size: 1.1rem; font-weight: 600; margin: 0; }
+    #loading p  { font-size: 0.85rem; color: #8b909a; margin: 0; max-width: 46rem; }
+  </style>
+</head>
+<body>
+  <div id="loading">
+    <h1>The Necessary Work</h1>
+    <p>Loading the prototype&hellip;</p>
+    <p>
+      A counterfactual 1990: coordinate global decarbonisation through the
+      fictional Common Future Authority. This scenario deliberately omits the
+      historical obstruction, crises, and political conflict of the real
+      period to isolate the economy &mdash; it is not a claim that rapid
+      transition would have been simple.
+    </p>
+  </div>
+  <script type="module">
+    import init from "./pkg/nw-client.js";
+    init()
+      .then(() => document.getElementById("loading")?.remove())
+      .catch((error) => {
+        // Bevy uses an exception to hand control to the browser's event
+        // loop; that one is not an error.
+        if (`${error}`.includes("Using exceptions for control flow")) {
+          document.getElementById("loading")?.remove();
+          return;
+        }
+        const note = document.querySelector("#loading p");
+        if (note) note.textContent = `Failed to start: ${error}`;
+        throw error;
+      });
+  </script>
+</body>
+</html>

@@ -23,7 +23,8 @@ nw-simulation = { path = "crates/nw-simulation" }
 nw-persistence = { path = "crates/nw-persistence" }
 
 # External crates
-bevy = "0.16"
+# webgl2 is explicit so the browser build never silently requires WebGPU.
+bevy = { version = "0.16", features = ["webgl2"] }
 serde = { version = "1", features = ["derive"] }
 ron = "0.8"
 postcard = { version = "1", features = ["alloc"] }

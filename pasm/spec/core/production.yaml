@@ -126,8 +126,9 @@ entities:
       confidence: confirmed
       title: Presentation client (nw-client)
       summary: >-
-        A Bevy application (native desktop now; a narrower WASM layout later)
-        that renders simulation state and maps clicks to semantic commands. It
+        A Bevy application (native desktop and browser WASM from one codebase;
+        a layout pass for narrow browsers is future work) that renders
+        simulation state and maps clicks to semantic commands. It
         is a non-authoritative view: it never owns authoritative state, and
         every number it shows comes from the simulation's state, calc traces,
         and previews. The UI-spike dashboard covers the main-dashboard surface:
@@ -146,16 +147,18 @@ entities:
   - component: ci-and-validation
     implementation:
       status: confirmed
-      paths: [.github/workflows/ci.yml]
+      paths: [.github/workflows/ci.yml, web/index.html]
     core:
       status: accepted
       confidence: confirmed
-      title: "CI: PASM validation, format, lint, tests"
+      title: "CI: PASM validation, format, lint, tests, WASM, Pages"
       summary: >-
         Every push and pull request validates the PASM spec, checks formatting,
-        runs clippy as an error gate, and runs the workspace test suite. The
-        WASM build and GitHub Pages deploy are added when the browser client
-        exists.
-      references: [determinism-and-test-obligations]
+        runs clippy as an error gate, runs the workspace test suite, and builds
+        the browser client for wasm32 (wasm-bindgen pinned to the locked crate
+        version). Only a successful default-branch build deploys the browser
+        client to GitHub Pages from the committed web/ shell — no separate
+        gh-pages branch.
+      references: [determinism-and-test-obligations, bevy-client]
     architecture:
       kind: continuous integration

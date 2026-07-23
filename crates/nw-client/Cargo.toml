@@ -17,5 +17,10 @@ nw-content = { workspace = true }
 nw-simulation = { workspace = true }
 bevy = { workspace = true }
 
+# Browser-only: seed derivation from Date.now(); wasm-bindgen is already in
+# the tree through Bevy and stays version-locked with it.
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+js-sys = "0.3"
+
 [lints]
 workspace = true

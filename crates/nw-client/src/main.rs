@@ -35,16 +35,26 @@ pub struct UiState {
     pub dirty: bool,
 }
 
+/// A fresh seed from the platform clock. `SystemTime` is unavailable on
+/// wasm32-unknown-unknown, so the browser asks `Date.now()` instead.
+#[cfg(not(target_arch = "wasm32"))]
+fn seed_from_clock() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|since| since.as_secs())
+        .unwrap_or(1)
+}
+
+#[cfg(target_arch = "wasm32")]
+fn seed_from_clock() -> u64 {
+    js_sys::Date::now() as u64 / 1000
+}
+
 fn main() {
     let seed = std::env::var("NW_SEED")
         .ok()
         .and_then(|value| value.parse().ok())
-        .unwrap_or_else(|| {
-            std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .map(|since| since.as_secs())
-                .unwrap_or(1)
-        });
+        .unwrap_or_else(seed_from_clock);
     let catalogue = Catalogue::embedded();
     let ticks_per_second = f64::from(catalogue.scenario.authored_speed_ticks_per_second.max(1));
     println!("The Necessary Work — seed {seed}");
@@ -54,6 +64,9 @@ fn main() {
             primary_window: Some(Window {
                 title: format!("The Necessary Work — prototype (seed {seed})"),
                 resolution: (1600., 900.).into(),
+                // In the browser the canvas tracks its parent element; the
+                // field is ignored on native.
+                fit_canvas_to_parent: true,
                 ..default()
             }),
             ..default()

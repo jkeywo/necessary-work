@@ -3163,6 +3163,7 @@ name = "nw-client"
 version = "0.1.0"
 dependencies = [
  "bevy",
+ "js-sys",
  "nw-content",
  "nw-simulation",
 ]
