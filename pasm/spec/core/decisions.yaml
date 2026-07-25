@@ -251,3 +251,23 @@ entities:
         exit the app without a human, and touch nothing authoritative. Revisit
         the rebuild granularity only if profiling ever says so.
       references: [bevy-client, single-authored-speed, semantic-command-boundary]
+
+  - decision: vellum-adoption
+    core:
+      status: accepted
+      confidence: confirmed
+      title: The shared foundation is adopted where it fits, and refused where it does not
+      summary: >-
+        Three vellum crates are in: vellum-digest (fnv1a and digest_postcard
+        were byte-identical to the in-crate versions, so adoption moved no
+        value anywhere), vellum-rng (the fleet construction with this crate's
+        named streams hashed into selectors, replacing a different seed mix
+        and slightly biased modulo draws — no pinned run fixtures existed, so
+        the only gate was that both seeded bots keep winning, which they do),
+        and vellum-corpus (the headless batch command runs on the shared
+        drive/tally/permille machinery). vellum-replay's Simulation trait is
+        deliberately NOT adopted: it models command-driven replay, and this
+        game's log is tick-stamped real time — periodic hash sampling, budget
+        and stall detection live in nw-persistence because the scheduler
+        encodes the genre, exactly as the fleet charter says.
+      references: [named-rng-streams, saves-logs-validation]

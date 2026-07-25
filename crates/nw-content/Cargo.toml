@@ -6,6 +6,7 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+vellum-digest.workspace = true
 serde = { workspace = true }
 ron = { workspace = true }
 

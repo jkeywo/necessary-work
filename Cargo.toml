@@ -28,6 +28,13 @@ bevy = { version = "0.16", features = ["webgl2"] }
 serde = { version = "1", features = ["derive"] }
 ron = "0.8"
 postcard = { version = "1", features = ["alloc"] }
+
+# The fleet's shared foundation, pinned to a rev like every vellum dependency;
+# bumping it is a PR whose diff touches only manifests and lockfiles. For
+# local work against a checkout, use a gitignored .cargo/config.toml [patch].
+vellum-digest = { git = "https://github.com/jkeywo/vellum", rev = "8688ec0243982decf2ffc05883d9ff8b22606fa6" }
+vellum-rng = { git = "https://github.com/jkeywo/vellum", rev = "8688ec0243982decf2ffc05883d9ff8b22606fa6" }
+vellum-corpus = { git = "https://github.com/jkeywo/vellum", rev = "8688ec0243982decf2ffc05883d9ff8b22606fa6" }
 anyhow = "1"
 thiserror = "2"
 clap = { version = "4", features = ["derive"] }

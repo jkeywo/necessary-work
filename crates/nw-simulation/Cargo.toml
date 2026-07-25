@@ -6,6 +6,7 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+vellum-rng.workspace = true
 nw-content = { workspace = true }
 serde = { workspace = true }
 

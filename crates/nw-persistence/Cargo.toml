@@ -6,6 +6,7 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+vellum-digest.workspace = true
 nw-content = { workspace = true }
 nw-simulation = { workspace = true }
 serde = { workspace = true }
