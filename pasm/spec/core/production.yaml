@@ -147,18 +147,19 @@ entities:
   - component: ci-and-validation
     implementation:
       status: confirmed
-      paths: [.github/workflows/ci.yml, web/index.html]
+      paths: [.github/workflows/ci.yml, index.html, Trunk.toml]
     core:
       status: accepted
       confidence: confirmed
       title: "CI: PASM validation, format, lint, tests, WASM, Pages"
       summary: >-
-        Every push and pull request validates the PASM spec, checks formatting,
-        runs clippy as an error gate, runs the workspace test suite, and builds
-        the browser client for wasm32 (wasm-bindgen pinned to the locked crate
-        version). Only a successful default-branch build deploys the browser
-        client to GitHub Pages from the committed web/ shell — no separate
-        gh-pages branch.
+        Every push and pull request validates and scans the PASM spec, checks
+        formatting, runs clippy as an error gate, runs the workspace test
+        suite, and builds the browser client with Trunk. The jobs come from
+        the fleet's reusable workflow in vellum, called by rev from ci.yml;
+        Trunk owns the wasm-bindgen CLI/crate version match. Only a successful
+        default-branch build deploys to GitHub Pages from the root index.html
+        shell — no separate gh-pages branch.
       references: [determinism-and-test-obligations, bevy-client]
     architecture:
       kind: continuous integration

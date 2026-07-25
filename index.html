@@ -4,6 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>The Necessary Work — prototype</title>
+  <link data-trunk rel="rust" href="crates/nw-client/Cargo.toml" data-bin="nw-client" data-wasm-opt="s" />
   <style>
     html, body {
       margin: 0;
@@ -48,21 +49,35 @@
       transition would have been simple.
     </p>
   </div>
-  <script type="module">
-    import init from "./pkg/nw-client.js";
-    init()
-      .then(() => document.getElementById("loading")?.remove())
-      .catch((error) => {
-        // Bevy uses an exception to hand control to the browser's event
-        // loop; that one is not an error.
-        if (`${error}`.includes("Using exceptions for control flow")) {
-          document.getElementById("loading")?.remove();
-          return;
-        }
-        const note = document.querySelector("#loading p");
-        if (note) note.textContent = `Failed to start: ${error}`;
-        throw error;
-      });
+  <script>
+    // Bevy 0.16 hands control to the browser's event loop by throwing
+    // "Using exceptions for control flow"; under Trunk that surfaces as an
+    // unhandled rejection from the injected init rather than a catchable
+    // promise, so it is swallowed here. Anything else is a real failure and
+    // is shown in the loading note.
+    function controlFlow(reason) {
+      return `${reason}`.includes("Using exceptions for control flow");
+    }
+    window.addEventListener("unhandledrejection", (event) => {
+      if (controlFlow(event.reason)) {
+        event.preventDefault();
+        return;
+      }
+      const note = document.querySelector("#loading p");
+      if (note) note.textContent = `Failed to start: ${event.reason}`;
+    });
+    window.addEventListener("error", (event) => {
+      if (controlFlow(event.message ?? event.error)) event.preventDefault();
+    });
+    // The loader clears when the app's canvas attaches — the one signal that
+    // works whether startup returned normally or via the exception above.
+    const obs = new MutationObserver(() => {
+      if (document.querySelector("canvas")) {
+        document.getElementById("loading")?.remove();
+        obs.disconnect();
+      }
+    });
+    obs.observe(document.body, { childList: true, subtree: true });
   </script>
 </body>
 </html>
