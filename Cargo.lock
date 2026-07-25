@@ -3174,6 +3174,7 @@ version = "0.1.0"
 dependencies = [
  "ron",
  "serde",
+ "vellum-digest",
 ]
 
 [[package]]
@@ -3185,6 +3186,7 @@ dependencies = [
  "nw-content",
  "nw-persistence",
  "nw-simulation",
+ "vellum-corpus",
 ]
 
 [[package]]
@@ -3196,6 +3198,7 @@ dependencies = [
  "postcard",
  "ron",
  "serde",
+ "vellum-digest",
 ]
 
 [[package]]
@@ -3204,6 +3207,7 @@ version = "0.1.0"
 dependencies = [
  "nw-content",
  "serde",
+ "vellum-rng",
 ]
 
 [[package]]
@@ -4652,6 +4656,29 @@ name = "vec_map"
 version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f1bddf1187be692e79c5ffeab891132dfb0f236ed36a43c7ed39f1165ee20191"
+
+[[package]]
+name = "vellum-corpus"
+version = "0.1.0"
+source = "git+https://github.com/jkeywo/vellum?rev=8688ec0243982decf2ffc05883d9ff8b22606fa6#8688ec0243982decf2ffc05883d9ff8b22606fa6"
+
+[[package]]
+name = "vellum-digest"
+version = "0.1.0"
+source = "git+https://github.com/jkeywo/vellum?rev=8688ec0243982decf2ffc05883d9ff8b22606fa6#8688ec0243982decf2ffc05883d9ff8b22606fa6"
+dependencies = [
+ "base64 0.22.1",
+ "postcard",
+ "serde",
+]
+
+[[package]]
+name = "vellum-rng"
+version = "0.1.0"
+source = "git+https://github.com/jkeywo/vellum?rev=8688ec0243982decf2ffc05883d9ff8b22606fa6#8688ec0243982decf2ffc05883d9ff8b22606fa6"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "version_check"

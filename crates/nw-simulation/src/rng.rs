@@ -1,71 +1,67 @@
-//! Deterministic randomness: an in-crate PCG-XSH-RR 64/32 generator and the
+//! Deterministic randomness: the fleet's PCG-XSH-RR 64/32 generator and the
 //! three named streams the simulation contract requires. Each stream derives
 //! from the scenario seed plus a stable identifier, so systems cannot share
-//! streams and adding a draw to one system cannot perturb another. In-crate so
-//! no dependency upgrade can silently change replays.
+//! streams and adding a draw to one system cannot perturb another.
+//!
+//! The generator is `vellum-rng`'s unified construction — `Pcg32::seeded`
+//! with this crate's stream names hashed into stream selectors, and the
+//! Lemire bounded draw underneath every helper. This replaced the in-crate
+//! generator (a different seed mix, and modulo draws that carried a slight
+//! bias) under the fleet decision `rng-unification-breaks-saves`; this game
+//! had no pinned run fixtures, so nothing needed re-blessing — the seeded
+//! bots simply had to keep winning, and they do.
 
 use nw_content::hash::fnv1a64;
 use serde::{Deserialize, Serialize};
 
-fn splitmix64(mut x: u64) -> u64 {
-    x = x.wrapping_add(0x9E37_79B9_7F4A_7C15);
-    x = (x ^ (x >> 30)).wrapping_mul(0xBF58_476D_1CE4_E5B9);
-    x = (x ^ (x >> 27)).wrapping_mul(0x94D0_49BB_1331_11EB);
-    x ^ (x >> 31)
-}
-
-/// PCG-XSH-RR 64/32 with the reference constants.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+/// The simulation's PCG32, stored as the fleet's shared generator type.
+///
+/// A thin vocabulary wrapper: the type, seeding, and draws are `vellum-rng`'s;
+/// the helper names (`range_i64`, `range_u64`, `pick`) are this crate's.
+/// `serde(transparent)` keeps the serialised shape exactly the inner
+/// `{ state, inc }`.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(transparent)]
 pub struct Pcg32 {
-    state: u64,
-    inc: u64,
+    inner: vellum_rng::Pcg32,
 }
 
 impl Pcg32 {
     /// Derive a stream from the scenario seed and a stable stream identifier.
     pub fn for_stream(seed: u64, stream: &str) -> Pcg32 {
-        let stream_id = fnv1a64(stream.as_bytes());
-        let mut rng = Pcg32 {
-            state: splitmix64(seed ^ stream_id),
-            inc: (stream_id << 1) | 1,
-        };
-        // One warm-up step decorrelates near-identical seeds.
-        rng.next_u32();
-        rng
+        Pcg32 {
+            inner: vellum_rng::Pcg32::seeded(seed, fnv1a64(stream.as_bytes())),
+        }
     }
 
     pub fn next_u32(&mut self) -> u32 {
-        let old = self.state;
-        self.state = old
-            .wrapping_mul(6_364_136_223_846_793_005)
-            .wrapping_add(self.inc);
-        let xorshifted = (((old >> 18) ^ old) >> 27) as u32;
-        let rot = (old >> 59) as u32;
-        xorshifted.rotate_right(rot)
+        self.inner.next_u32()
     }
 
-    /// Uniform draw in `lo..=hi`.
+    /// Uniform draw in `lo..=hi`. Spans stay within `u32`, which every caller
+    /// respects by construction (game quantities, not raw 64-bit ranges).
     pub fn range_i64(&mut self, lo: i64, hi: i64) -> i64 {
         debug_assert!(lo <= hi);
-        let span = (hi - lo + 1) as u64;
-        lo + (u64::from(self.next_u32()) % span) as i64
+        let span = u64::try_from(hi - lo).expect("range_i64 span is non-negative") + 1;
+        let span = u32::try_from(span).expect("range_i64 spans stay within u32");
+        lo + i64::from(self.inner.below(span))
     }
 
-    /// Uniform draw in `lo..=hi`.
+    /// Uniform draw in `lo..=hi`. Spans stay within `u32`.
     pub fn range_u64(&mut self, lo: u64, hi: u64) -> u64 {
         debug_assert!(lo <= hi);
-        lo + u64::from(self.next_u32()) % (hi - lo + 1)
+        let span = u32::try_from(hi - lo + 1).expect("range_u64 spans stay within u32");
+        lo + u64::from(self.inner.below(span))
     }
 
     /// Uniform index into a slice of `len` elements.
     pub fn pick(&mut self, len: usize) -> usize {
-        debug_assert!(len > 0);
-        self.next_u32() as usize % len
+        self.inner.pick_index(len)
     }
 }
 
 /// The three named streams. Systems may not share streams.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RngStreams {
     pub starting_variation: Pcg32,
     pub opportunity_timing: Pcg32,
@@ -121,5 +117,17 @@ mod tests {
             (0..4).map(|_| a.next_u32()).collect::<Vec<_>>(),
             (0..4).map(|_| b.next_u32()).collect::<Vec<_>>()
         );
+    }
+
+    #[test]
+    fn draws_stay_in_their_ranges() {
+        let mut rng = Pcg32::for_stream(3, "starting_variation");
+        for _ in 0..500 {
+            let v = rng.range_i64(-4, 9);
+            assert!((-4..=9).contains(&v));
+            let u = rng.range_u64(10, 12);
+            assert!((10..=12).contains(&u));
+            assert!(rng.pick(5) < 5);
+        }
     }
 }

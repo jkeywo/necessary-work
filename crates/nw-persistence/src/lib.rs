@@ -12,15 +12,16 @@
 //! (minus the derivable explanation trace) — target-independent varint
 //! encoding, so native and WASM builds must agree.
 
-use nw_content::hash::fnv1a64;
 use nw_content::Catalogue;
 use nw_simulation::{LoggedCommand, RunState, Sim, RULESET_VERSION};
 use serde::{Deserialize, Serialize};
 
 /// FNV-1a 64 over the postcard bytes of the authoritative state.
+///
+/// The fleet's `digest_postcard` — the same bytes and the same hash the
+/// in-crate version produced, so adopting it moved no digest anywhere.
 pub fn digest(state: &RunState) -> u64 {
-    let bytes = postcard::to_allocvec(state).expect("run state must serialize");
-    fnv1a64(&bytes)
+    vellum_digest::digest_postcard(state)
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

@@ -98,24 +98,38 @@ fn main() -> anyhow::Result<()> {
             count,
             max_ticks,
         } => {
-            let mut failures = 0u64;
-            for seed in seed_start..seed_start + count {
-                for strategy in [Strategy::DeployFirst, Strategy::CapacityFirst] {
+            // The fleet's batch driver: one case per seed x strategy, the
+            // records this game's vocabulary, the loop and tallies shared.
+            let strategies = [Strategy::DeployFirst, Strategy::CapacityFirst];
+            let cases = count * strategies.len() as u64;
+            let batch =
+                vellum_corpus::drive(0..cases, vellum_corpus::Budget::cases(cases), |case| {
+                    let seed = seed_start + case / strategies.len() as u64;
+                    let strategy = strategies[(case % strategies.len() as u64) as usize];
                     let mut runner = Runner::new(Catalogue::embedded(), seed);
                     let outcome = bot::play(&mut runner, strategy, max_ticks);
                     let verdict = match outcome.victory_tick {
                         Some(tick) => format!("victory at {tick}"),
-                        None => {
-                            failures += 1;
-                            format!(
-                                "NO VICTORY ({} milli-Gt left)",
-                                runner.sim.state.total_emissions_milli()
-                            )
-                        }
+                        None => format!(
+                            "NO VICTORY ({} milli-Gt left)",
+                            runner.sim.state.total_emissions_milli()
+                        ),
                     };
                     println!("seed {seed:>4}  {:>14}  {verdict}", strategy.name());
-                }
+                    outcome.victory_tick.is_some()
+                });
+            let mut outcomes = vellum_corpus::Tally::new();
+            for &won in &batch.records {
+                outcomes.add(if won { "victory" } else { "no-victory" });
             }
+            let failures = outcomes.count(&"no-victory");
+            println!(
+                "batch:    {} of {} won ({} permille) in {:.1}s",
+                outcomes.count(&"victory"),
+                outcomes.total(),
+                vellum_corpus::permille(outcomes.count(&"victory"), outcomes.total()),
+                batch.elapsed_seconds
+            );
             if failures > 0 {
                 bail!("{failures} run(s) failed to reach victory");
             }
