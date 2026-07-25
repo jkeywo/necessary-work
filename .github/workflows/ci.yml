@@ -1,7 +1,7 @@
-# CI for the prototype: validate the PASM design spec; format-check, lint, and
-# test the Rust workspace; build the browser client for WebAssembly. Only a
-# successful default-branch build deploys the browser client to GitHub Pages.
-
+# Fleet CI caller — the workflow itself lives in vellum, pinned to a rev like
+# every other vellum dependency; a bump PR moves this rev together with the
+# pyproject pin. Jobs: pasm validate + scan (gates), fmt / clippy -D warnings /
+# tests, Trunk web build, Pages deploy on main pushes.
 name: CI
 
 on:
@@ -9,79 +9,22 @@ on:
     branches: [main]
   pull_request:
 
+# The deploy job inside fleet-ci needs pages + id-token; a called workflow can
+# only narrow what the caller grants.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-permissions:
-  contents: read
-
 jobs:
-  pasm:
-    name: PASM validation
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
-      - name: Install PASM tooling
-        run: uv sync
-      - name: Validate the spec
-        run: uv run pasm validate pasm/spec
-
-  rust:
-    name: Format, lint, test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: System dependencies for the Bevy client
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libasound2-dev libudev-dev
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: 1.95.0
-          components: rustfmt, clippy
-      - uses: Swatinem/rust-cache@v2
-      - name: Formatting
-        run: cargo fmt --check
-      - name: Clippy
-        run: cargo clippy --workspace --all-targets -- -D warnings
-      - name: Tests
-        run: cargo test --workspace
-
-  wasm:
-    name: WASM build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: 1.95.0
-          targets: wasm32-unknown-unknown
-      - uses: Swatinem/rust-cache@v2
-      - uses: taiki-e/install-action@v2
-        with:
-          # Pinned to the wasm-bindgen version in Cargo.lock; the CLI and the
-          # crate must match exactly.
-          tool: wasm-bindgen@0.2.126
-      - name: Build the browser client
-        run: cargo build --release --target wasm32-unknown-unknown -p nw-client
-      - name: Generate the web bindings
-        run: wasm-bindgen --target web --no-typescript --out-dir web/pkg target/wasm32-unknown-unknown/release/nw-client.wasm
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: web
-
-  deploy:
-    name: Deploy GitHub Pages
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    needs: [pasm, rust, wasm]
-    runs-on: ubuntu-latest
-    permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
+  fleet:
+    uses: jkeywo/vellum/.github/workflows/fleet-ci.yml@ece24ad86fa384d12279105f94f089da180f9d89
+    with:
+      # Bevy's audio/input need these to build on ubuntu; the wasm job shares
+      # them for host-compiled build scripts.
+      apt-packages: libasound2-dev libudev-dev
+      wasm-mode: trunk
