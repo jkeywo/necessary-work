@@ -1,21 +1,25 @@
+# Development tooling for The Necessary Work. Ships no Python of its own;
+# exists to pull PASM. What stays here is pasm/spec — the model of *this*
+# codebase.
 [project]
 name = "necessary-work-tooling"
 version = "0.1.0"
 description = "Development tooling for The Necessary Work: the PASM architecture model."
 readme = "README.md"
 requires-python = ">=3.11"
-# PASM lives in its own repository (shared across jkeywo's games). What stays
-# here is pasm/spec -- the model of *this* codebase. Pinned to a rev: the
-# scanner's findings are a gate, so which version produced them matters.
 dependencies = [
-  "pasm @ git+https://github.com/jkeywo/pasm@de8a7bfce3aefa799eea51f8e5a2708e996e8b6e",
+  # PASM lives in the fleet's shared repository (a subdirectory of vellum),
+  # pinned to a rev: the scanner's findings are a gate, so which version
+  # produced them matters. Bumping the rev is part of a vellum bump PR — see
+  # vellum's docs/handbook/bump-workflow.md.
+  "pasm @ git+https://github.com/jkeywo/vellum@ece24ad86fa384d12279105f94f089da180f9d89#subdirectory=pasm",
 ]
 
-[build-system]
-requires = ["setuptools>=68"]
-build-backend = "setuptools.build_meta"
+[tool.uv]
+package = false
 
-# This project ships no Python of its own; installing it is how the pinned PASM
-# and its dependencies arrive.
-[tool.setuptools]
-packages = []
+# Local override against a sibling vellum checkout — uncomment for local
+# work, re-comment before committing. The committed state always resolves
+# the pinned rev.
+# [tool.uv.sources]
+# pasm = { path = "../vellum/pasm", editable = true }
