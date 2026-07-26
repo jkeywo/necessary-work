@@ -59,14 +59,14 @@ deterministic core by accident.
 
 ## Design records (PASM)
 
-Design and architecture are recorded with [PASM](https://github.com/jkeywo/pasm)
+Design and architecture are recorded with [PASM](https://github.com/jkeywo/vellum/tree/main/pasm)
 — a specification-and-scanner model of what the codebase is *supposed* to be. The
 spec under [`pasm/spec`](pasm/spec) is the living record; it is validated in CI
 and kept in step with the implementation.
 
 ```bash
-pip install -e .
-pasm validate pasm/spec
+uv sync
+uv run pasm validate pasm/spec
 ```
 
 ## Development
