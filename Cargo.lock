@@ -404,7 +404,7 @@ dependencies = [
  "downcast-rs",
  "either",
  "petgraph",
- "ron",
+ "ron 0.8.1",
  "serde",
  "smallvec",
  "thiserror 2.0.19",
@@ -465,7 +465,7 @@ dependencies = [
  "futures-lite",
  "js-sys",
  "parking_lot",
- "ron",
+ "ron 0.8.1",
  "serde",
  "stackfuture",
  "thiserror 2.0.19",
@@ -3172,7 +3172,7 @@ dependencies = [
 name = "nw-content"
 version = "0.1.0"
 dependencies = [
- "ron",
+ "ron 0.8.1",
  "serde",
  "vellum-digest",
 ]
@@ -3196,9 +3196,11 @@ dependencies = [
  "nw-content",
  "nw-simulation",
  "postcard",
- "ron",
+ "ron 0.8.1",
  "serde",
  "vellum-digest",
+ "vellum-replay",
+ "vellum-save",
 ]
 
 [[package]]
@@ -3935,6 +3937,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "ron"
+version = "0.12.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "81116b9531d61eabc41aeb228e4b6b2435bcca3233b98cf3b3077d4e6e9debb3"
+dependencies = [
+ "bitflags 2.13.1",
+ "once_cell",
+ "serde",
+ "serde_derive",
+ "typeid",
+ "unicode-ident",
+]
+
+[[package]]
 name = "roxmltree"
 version = "0.20.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4660,12 +4676,12 @@ checksum = "f1bddf1187be692e79c5ffeab891132dfb0f236ed36a43c7ed39f1165ee20191"
 [[package]]
 name = "vellum-corpus"
 version = "0.1.0"
-source = "git+https://github.com/jkeywo/vellum?rev=8688ec0243982decf2ffc05883d9ff8b22606fa6#8688ec0243982decf2ffc05883d9ff8b22606fa6"
+source = "git+https://github.com/jkeywo/vellum?rev=c064decdcfa07d5082105064c10a6a58a56b2857#c064decdcfa07d5082105064c10a6a58a56b2857"
 
 [[package]]
 name = "vellum-digest"
 version = "0.1.0"
-source = "git+https://github.com/jkeywo/vellum?rev=8688ec0243982decf2ffc05883d9ff8b22606fa6#8688ec0243982decf2ffc05883d9ff8b22606fa6"
+source = "git+https://github.com/jkeywo/vellum?rev=c064decdcfa07d5082105064c10a6a58a56b2857#c064decdcfa07d5082105064c10a6a58a56b2857"
 dependencies = [
  "base64 0.22.1",
  "postcard",
@@ -4673,11 +4689,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "vellum-replay"
+version = "0.1.0"
+source = "git+https://github.com/jkeywo/vellum?rev=c064decdcfa07d5082105064c10a6a58a56b2857#c064decdcfa07d5082105064c10a6a58a56b2857"
+
+[[package]]
 name = "vellum-rng"
 version = "0.1.0"
-source = "git+https://github.com/jkeywo/vellum?rev=8688ec0243982decf2ffc05883d9ff8b22606fa6#8688ec0243982decf2ffc05883d9ff8b22606fa6"
+source = "git+https://github.com/jkeywo/vellum?rev=c064decdcfa07d5082105064c10a6a58a56b2857#c064decdcfa07d5082105064c10a6a58a56b2857"
 dependencies = [
  "serde",
+]
+
+[[package]]
+name = "vellum-save"
+version = "0.1.0"
+source = "git+https://github.com/jkeywo/vellum?rev=c064decdcfa07d5082105064c10a6a58a56b2857#c064decdcfa07d5082105064c10a6a58a56b2857"
+dependencies = [
+ "ron 0.12.2",
+ "serde",
+ "vellum-digest",
+ "vellum-replay",
 ]
 
 [[package]]

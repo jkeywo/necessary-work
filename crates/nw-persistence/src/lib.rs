@@ -1,190 +1,223 @@
-//! Persistence: validation records, state digests, and replay validation.
+//! Persistence: run records, state digests, and replay validation.
 //!
-//! A run's authoritative record is its ruleset and content versions, scenario
-//! identifier and seed, the ordered command log (accepted and rejected), and
-//! periodic state hashes. Validation recreates the initial state, replays the
-//! commands, checks every periodic hash, and confirms the final hash and
-//! victory tick. Snapshots may cache state for fast loading later; the command
-//! log is authoritative. Compatibility is version-specific: mismatched records
-//! are rejected outright, never converted.
+//! A run's authoritative record is its versions, scenario and seed, the
+//! ordered command log (accepted *and* rejected), and periodic state hashes.
+//! Validation recreates the initial state, replays the commands, checks every
+//! periodic hash, and confirms the final hash. Compatibility is
+//! version-specific: mismatched records are rejected outright, never
+//! converted.
 //!
 //! Digests are FNV-1a 64 over the postcard serialization of the run state
 //! (minus the derivable explanation trace) — target-independent varint
 //! encoding, so native and WASM builds must agree.
+//!
+//! # This is the fleet's `Run`, not a private format
+//!
+//! The record is [`vellum_save::Run`] and the replay is
+//! [`vellum_replay::Simulation`]. An earlier decision recorded that the
+//! replay trait was "deliberately not adopted" because this game's log is
+//! tick-stamped real time rather than a turn-by-turn command sequence. That
+//! judgement was wrong, and this crate is where it is corrected: the trait
+//! fits once the tick is understood as part of the *command* rather than
+//! something a driver schedules. `apply` advances to the command's tick and
+//! then executes it. The hand-written replay loop that used to live here —
+//! command cursor, hash cursor, step budget, stall detection — is gone.
 
 use nw_content::Catalogue;
-use nw_simulation::{LoggedCommand, RunState, Sim, RULESET_VERSION};
-use serde::{Deserialize, Serialize};
+use nw_simulation::{Command, LoggedCommand, Rejection, RunState, Sim, RULESET_VERSION};
+use vellum_replay::Simulation;
+use vellum_save::{Ledger, Sample, Sampling, Versions};
+
+pub use vellum_save::{Moved, Verdict};
+
+/// The record format itself. Bumped by hand when the *shape* of a record
+/// changes; the rules and content dimensions move on their own.
+pub const RECORD_FORMAT: u32 = 1;
 
 /// FNV-1a 64 over the postcard bytes of the authoritative state.
-///
-/// The fleet's `digest_postcard` — the same bytes and the same hash the
-/// in-crate version produced, so adopting it moved no digest anywhere.
 pub fn digest(state: &RunState) -> u64 {
     vellum_digest::digest_postcard(state)
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub struct TickHash {
-    pub tick: u64,
-    pub hash: u64,
+/// A run of this game.
+pub type RunRecord = vellum_save::Run<LoggedCommand>;
+
+/// What this build was written against.
+pub fn versions(catalogue: &Catalogue) -> Versions {
+    Versions::new(RECORD_FORMAT, RULESET_VERSION, catalogue.content_version)
 }
 
-/// The authoritative validation record.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct RunRecord {
-    pub ruleset_version: String,
-    pub content_version: u64,
-    pub scenario: String,
-    pub seed: u64,
-    pub commands: Vec<LoggedCommand>,
-    pub hash_every: u64,
-    pub hashes: Vec<TickHash>,
-    pub final_tick: u64,
-    pub final_hash: u64,
-    pub victory_tick: Option<u64>,
+/// Why a replay did not go the way the record says it went.
+///
+/// Every variant is a disagreement between two builds about the same log, not
+/// a player error — the command was recorded with its outcome, so both an
+/// unexpected rejection *and* an unexpected acceptance are divergences.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Divergence {
+    /// The record says this command was accepted; this build refused it.
+    UnexpectedRejection(Rejection),
+    /// The record says this command was refused; this build accepted it.
+    UnexpectedAcceptance,
+    /// The simulation could not reach the tick this command was recorded at.
+    /// In practice: it is paused, and the record expects time to have passed.
+    Stalled { stuck_at: u64, wanted: u64 },
 }
 
-impl RunRecord {
-    pub fn to_ron(&self) -> String {
-        ron::ser::to_string_pretty(self, ron::ser::PrettyConfig::default())
-            .expect("record must serialize")
+impl std::fmt::Display for Divergence {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Divergence::UnexpectedRejection(rejection) => {
+                write!(
+                    f,
+                    "refused on replay, but the record accepted it: {rejection:?}"
+                )
+            }
+            Divergence::UnexpectedAcceptance => {
+                f.write_str("accepted on replay, but the record refused it")
+            }
+            Divergence::Stalled { stuck_at, wanted } => write!(
+                f,
+                "stuck at tick {stuck_at}; the record expects a command at {wanted}"
+            ),
+        }
     }
-
-    pub fn from_ron(text: &str) -> Result<RunRecord, String> {
-        ron::from_str(text).map_err(|e| format!("record: {e}"))
-    }
 }
 
-/// A live session harness: a [`Sim`] plus periodic hash sampling, producing a
-/// [`RunRecord`] at the end.
+/// A live session: a [`Sim`] that keeps its own divergence ledger.
+///
+/// The sampling lives here rather than in whatever is driving the run,
+/// because the simulation is the only thing that knows what a tick is — and
+/// because a replay and a recording must sample at exactly the same moments
+/// or the ledger compares nothing.
 pub struct Runner {
     pub sim: Sim,
-    hash_every: u64,
-    hashes: Vec<TickHash>,
-    last_hashed: u64,
+    ledger: Ledger,
+    /// The last tick sampled, so a paused tick — which does not advance the
+    /// counter — cannot sample the same tick twice, and tick zero is not
+    /// sampled at all. Matching the behaviour the records were written with.
+    last_sampled: u64,
 }
 
 impl Runner {
     pub fn new(catalogue: Catalogue, seed: u64) -> Runner {
-        let hash_every = catalogue.scenario.hash_every_ticks.max(1);
+        let every = catalogue.scenario.hash_every_ticks.max(1);
         Runner {
             sim: Sim::new(catalogue, seed),
-            hash_every,
-            hashes: Vec::new(),
-            last_hashed: 0,
+            ledger: Ledger {
+                every,
+                ..Ledger::default()
+            },
+            last_sampled: 0,
         }
     }
 
-    /// Advance one tick and sample the periodic hash on cadence.
+    /// Advance one tick and sample on cadence.
     pub fn tick(&mut self) {
         self.sim.tick();
         let tick = self.sim.state.tick;
-        if tick.is_multiple_of(self.hash_every) && tick != self.last_hashed {
-            self.hashes.push(TickHash {
-                tick,
-                hash: digest(&self.sim.state),
-            });
-            self.last_hashed = tick;
+        let digest = digest(&self.sim.state);
+        if tick.is_multiple_of(self.ledger.every) && tick != self.last_sampled {
+            self.ledger.samples.push(Sample { tick, digest });
+            self.last_sampled = tick;
         }
+        self.ledger.final_tick = tick;
+        self.ledger.final_digest = digest;
     }
 
     pub fn into_record(self) -> RunRecord {
-        let state = &self.sim.state;
         RunRecord {
-            ruleset_version: RULESET_VERSION.to_string(),
-            content_version: self.sim.catalogue().content_version,
+            versions: versions(self.sim.catalogue()),
             scenario: self.sim.catalogue().scenario.id.clone(),
-            seed: state.seed,
+            seed: self.sim.state.seed,
             commands: self.sim.log.clone(),
-            hash_every: self.hash_every,
-            hashes: self.hashes,
-            final_tick: state.tick,
-            final_hash: digest(state),
-            victory_tick: state.victory_tick,
+            ledger: self.ledger,
         }
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ValidationOutcome {
-    /// Everything replayed and every hash matched.
-    Valid { victory_tick: Option<u64> },
-    /// Ruleset, content, or scenario version differs: rejected, not converted.
-    VersionMismatch,
-    /// A replayed command's accept/reject outcome differed from the record.
-    CommandMismatch { index: usize },
-    /// A periodic hash diverged.
-    HashMismatch { tick: u64 },
-    /// The final state hash or victory tick diverged.
-    FinalStateMismatch,
-    /// The record cannot make progress (e.g. ends paused mid-log).
-    Stalled,
+impl Simulation for Runner {
+    type Command = LoggedCommand;
+    type Rejection = Divergence;
+
+    /// Advance to the command's tick, then execute it — which is what makes a
+    /// tick-stamped real-time log a command log, and the whole reason the
+    /// fleet's replay trait fits this game after all.
+    fn apply(&mut self, logged: &LoggedCommand) -> Result<(), Divergence> {
+        self.advance_to(logged.tick);
+        if self.sim.state.tick != logged.tick {
+            return Err(Divergence::Stalled {
+                stuck_at: self.sim.state.tick,
+                wanted: logged.tick,
+            });
+        }
+        match (self.sim.execute(logged.command.clone()), &logged.rejection) {
+            (Ok(()), None) => Ok(()),
+            (Err(_), Some(_)) => Ok(()),
+            (Err(rejection), None) => Err(Divergence::UnexpectedRejection(rejection)),
+            (Ok(()), Some(_)) => Err(Divergence::UnexpectedAcceptance),
+        }
+    }
+
+    /// Never: this game's runs are ended by their final tick, not by a state
+    /// the log can reach early. Victory does not stop the clock.
+    fn is_over(&self) -> bool {
+        false
+    }
+
+    fn digest(&self) -> u64 {
+        digest(&self.sim.state)
+    }
+}
+
+impl Sampling for Runner {
+    fn ledger(&self) -> &Ledger {
+        &self.ledger
+    }
+
+    /// Advance to `tick`, sampling as it goes.
+    ///
+    /// Stops early if the simulation is paused, because `Sim::tick` is a no-op
+    /// while paused and this would otherwise spin forever. The caller notices
+    /// it did not arrive and reports [`Divergence::Stalled`] — a record that
+    /// expects time to pass while paused cannot be honest.
+    fn advance_to(&mut self, tick: u64) {
+        while self.sim.state.tick < tick && !self.sim.state.paused {
+            self.tick();
+        }
+    }
 }
 
 /// Replay a record from scratch and check it against its own hashes.
-pub fn validate(record: &RunRecord, catalogue: Catalogue) -> ValidationOutcome {
-    if record.ruleset_version != RULESET_VERSION
-        || record.content_version != catalogue.content_version
-        || record.scenario != catalogue.scenario.id
-    {
-        return ValidationOutcome::VersionMismatch;
-    }
+///
+/// The version gate runs first and refuses without replaying: a run replayed
+/// under changed rules produces a divergence report about a run that was never
+/// going to reproduce, which reads like a broken simulation instead of a stale
+/// record.
+pub fn validate(record: &RunRecord, catalogue: Catalogue) -> Verdict<Divergence> {
+    let current = versions(&catalogue);
+    let mut runner = Runner::new(catalogue, record.seed);
+    vellum_save::verify(record, &current, &mut runner)
+}
 
-    let mut sim = Sim::new(catalogue, record.seed);
-    let mut next_command = 0usize;
-    let mut next_hash = 0usize;
-    let mut last_hashed = 0u64;
-    let hash_every = record.hash_every.max(1);
-    let budget = record.final_tick + record.commands.len() as u64 + 16;
-    let mut steps = 0u64;
+/// Replay a record and hand back the victory tick it reproduced.
+///
+/// Separate from [`validate`] because the victory tick is not a *check* — it
+/// is part of `RunState` and therefore already inside the final digest, so a
+/// record that reproduces has the same victory tick by construction. This
+/// just saves the caller replaying it twice to read one field.
+pub fn replay(record: &RunRecord, catalogue: Catalogue) -> (Verdict<Divergence>, Option<u64>) {
+    let current = versions(&catalogue);
+    let mut runner = Runner::new(catalogue, record.seed);
+    let verdict = vellum_save::verify(record, &current, &mut runner);
+    let victory_tick = runner.sim.state.victory_tick;
+    (verdict, victory_tick)
+}
 
-    loop {
-        while next_command < record.commands.len()
-            && record.commands[next_command].tick == sim.state.tick
-        {
-            let logged = &record.commands[next_command];
-            let result = sim.execute(logged.command.clone());
-            if result.is_err() != logged.rejection.is_some() {
-                return ValidationOutcome::CommandMismatch {
-                    index: next_command,
-                };
-            }
-            next_command += 1;
-        }
-
-        if sim.state.tick >= record.final_tick && next_command >= record.commands.len() {
-            break;
-        }
-        if sim.state.paused {
-            // All commands for the frozen tick are consumed and the record
-            // still expects progress: it cannot be honest.
-            return ValidationOutcome::Stalled;
-        }
-
-        sim.tick();
-        steps += 1;
-        if steps > budget {
-            return ValidationOutcome::Stalled;
-        }
-
-        let tick = sim.state.tick;
-        if tick.is_multiple_of(hash_every) && tick != last_hashed {
-            last_hashed = tick;
-            if next_hash < record.hashes.len() && record.hashes[next_hash].tick == tick {
-                if record.hashes[next_hash].hash != digest(&sim.state) {
-                    return ValidationOutcome::HashMismatch { tick };
-                }
-                next_hash += 1;
-            }
-        }
-    }
-
-    if digest(&sim.state) != record.final_hash || sim.state.victory_tick != record.victory_tick {
-        return ValidationOutcome::FinalStateMismatch;
-    }
-    ValidationOutcome::Valid {
-        victory_tick: record.victory_tick,
+/// Run a command through the session, logging it. The recording counterpart of
+/// [`Simulation::apply`], which is the replaying one.
+impl Runner {
+    pub fn execute(&mut self, command: Command) -> Result<(), Rejection> {
+        self.sim.execute(command)
     }
 }
 
@@ -192,41 +225,89 @@ pub fn validate(record: &RunRecord, catalogue: Catalogue) -> ValidationOutcome {
 mod tests {
     use super::*;
 
-    #[test]
-    fn record_round_trips_through_ron() {
-        let mut runner = Runner::new(Catalogue::embedded(), 3);
-        for _ in 0..600 {
+    fn run(seed: u64, ticks: u64) -> RunRecord {
+        let mut runner = Runner::new(Catalogue::embedded(), seed);
+        for _ in 0..ticks {
             runner.tick();
         }
-        let record = runner.into_record();
-        let text = record.to_ron();
-        assert_eq!(RunRecord::from_ron(&text).unwrap(), record);
+        runner.into_record()
+    }
+
+    #[test]
+    fn record_round_trips_through_ron() {
+        let record = run(3, 600);
+        let text = record.to_ron().expect("serializes");
+        assert_eq!(RunRecord::from_ron(&text).expect("parses"), record);
     }
 
     #[test]
     fn an_untouched_run_validates() {
-        let mut runner = Runner::new(Catalogue::embedded(), 5);
-        for _ in 0..1200 {
-            runner.tick();
-        }
-        let record = runner.into_record();
+        let record = run(5, 1200);
         assert_eq!(
             validate(&record, Catalogue::embedded()),
-            ValidationOutcome::Valid { victory_tick: None }
+            Verdict::Reproduced
         );
     }
 
     #[test]
     fn version_mismatch_is_rejected_not_converted() {
-        let mut runner = Runner::new(Catalogue::embedded(), 5);
-        for _ in 0..64 {
-            runner.tick();
-        }
-        let mut record = runner.into_record();
-        record.ruleset_version = "proto-0".into();
-        assert_eq!(
+        let mut record = run(5, 64);
+        record.versions.rules = "proto-0".into();
+        assert!(matches!(
             validate(&record, Catalogue::embedded()),
-            ValidationOutcome::VersionMismatch
+            Verdict::Refused(Moved::Rules { .. })
+        ));
+
+        let mut record = run(5, 64);
+        record.versions.content ^= 0xff;
+        assert!(matches!(
+            validate(&record, Catalogue::embedded()),
+            Verdict::Refused(Moved::Content { .. })
+        ));
+    }
+
+    /// The reason periodic hashes are recorded at all: a divergence names the
+    /// tick to look at rather than only the fact that one happened. These runs
+    /// are thousands of ticks long.
+    #[test]
+    fn a_moved_periodic_hash_is_located() {
+        let mut record = run(5, 2000);
+        assert!(
+            record.ledger.samples.len() > 2,
+            "this run should have sampled several times"
         );
+        let at = record.ledger.samples[1].tick;
+        record.ledger.samples[1].digest ^= 0xff;
+        assert!(matches!(
+            validate(&record, Catalogue::embedded()),
+            Verdict::Diverged { at_tick: Some(tick), .. } if tick == at
+        ));
+    }
+
+    #[test]
+    fn a_moved_final_hash_is_caught() {
+        let mut record = run(5, 600);
+        record.ledger.final_digest ^= 0xff;
+        record.ledger.samples.clear();
+        assert!(matches!(
+            validate(&record, Catalogue::embedded()),
+            Verdict::Diverged { at_tick: None, .. }
+        ));
+    }
+
+    /// The victory tick is inside the final digest, so a reproduced record has
+    /// it by construction — this is the test that lets the record stop
+    /// carrying it as a separate field.
+    #[test]
+    fn a_reproduced_run_brings_its_victory_tick_with_it() {
+        let record = run(5, 1200);
+        let (verdict, victory_tick) = replay(&record, Catalogue::embedded());
+        assert_eq!(verdict, Verdict::Reproduced);
+
+        let mut fresh = Runner::new(Catalogue::embedded(), 5);
+        for _ in 0..1200 {
+            fresh.tick();
+        }
+        assert_eq!(victory_tick, fresh.sim.state.victory_tick);
     }
 }

@@ -4,7 +4,7 @@
 
 use nw_content::Catalogue;
 use nw_headless::bot::{self, Strategy};
-use nw_persistence::{validate, Runner, ValidationOutcome};
+use nw_persistence::{validate, Moved, Runner, Verdict};
 
 const MAX_TICKS: u64 = 20_000;
 
@@ -27,9 +27,7 @@ fn both_build_orders_win_and_their_records_validate() {
         let record = runner.into_record();
         assert_eq!(
             validate(&record, Catalogue::embedded()),
-            ValidationOutcome::Valid {
-                victory_tick: record.victory_tick
-            },
+            Verdict::Reproduced,
             "{} record must replay-validate",
             strategy.name()
         );
@@ -45,33 +43,43 @@ fn tampered_records_are_rejected() {
     bot::play(&mut runner, Strategy::DeployFirst, 2_000);
     let record = runner.into_record();
 
+    // Each refusal now names the dimension that moved rather than answering
+    // "version mismatch" to three different questions.
     let mut wrong_ruleset = record.clone();
-    wrong_ruleset.ruleset_version = "proto-0".into();
-    assert_eq!(
+    wrong_ruleset.versions.rules = "proto-0".into();
+    assert!(matches!(
         validate(&wrong_ruleset, Catalogue::embedded()),
-        ValidationOutcome::VersionMismatch
-    );
+        Verdict::Refused(Moved::Rules { .. })
+    ));
 
     let mut wrong_content = record.clone();
-    wrong_content.content_version ^= 1;
-    assert_eq!(
+    wrong_content.versions.content ^= 1;
+    assert!(matches!(
         validate(&wrong_content, Catalogue::embedded()),
-        ValidationOutcome::VersionMismatch
-    );
+        Verdict::Refused(Moved::Content { .. })
+    ));
+
+    let mut wrong_format = record.clone();
+    wrong_format.versions.format += 1;
+    assert!(matches!(
+        validate(&wrong_format, Catalogue::embedded()),
+        Verdict::Refused(Moved::Format { .. })
+    ));
 
     let mut wrong_final = record.clone();
-    wrong_final.final_hash ^= 1;
-    assert_eq!(
+    wrong_final.ledger.final_digest ^= 1;
+    wrong_final.ledger.samples.clear();
+    assert!(matches!(
         validate(&wrong_final, Catalogue::embedded()),
-        ValidationOutcome::FinalStateMismatch
-    );
+        Verdict::Diverged { at_tick: None, .. }
+    ));
 
+    // A different seed is a different run: the versions all still match, so
+    // it replays and comes out somewhere else.
     let mut wrong_seed = record;
     wrong_seed.seed ^= 1;
     assert_ne!(
         validate(&wrong_seed, Catalogue::embedded()),
-        ValidationOutcome::Valid {
-            victory_tick: wrong_seed.victory_tick
-        }
+        Verdict::Reproduced
     );
 }

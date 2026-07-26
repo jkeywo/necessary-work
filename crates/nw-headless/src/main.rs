@@ -6,7 +6,7 @@ use anyhow::{bail, Context};
 use clap::{Parser, Subcommand};
 use nw_content::Catalogue;
 use nw_headless::bot::{self, Strategy};
-use nw_persistence::{validate, Runner, ValidationOutcome};
+use nw_persistence::{replay, validate, Runner, Verdict};
 
 #[derive(Parser)]
 #[command(
@@ -69,11 +69,11 @@ fn main() -> anyhow::Result<()> {
             print_summary(&runner, strategy, outcome);
             let run_record = runner.into_record();
             match validate(&run_record, Catalogue::embedded()) {
-                ValidationOutcome::Valid { .. } => println!("replay:   valid"),
-                other => bail!("replay validation failed: {other:?}"),
+                Verdict::Reproduced => println!("replay:   valid"),
+                other => bail!("replay validation failed: {other}"),
             }
             if let Some(path) = record {
-                std::fs::write(&path, run_record.to_ron())
+                std::fs::write(&path, run_record.to_ron()?)
                     .with_context(|| format!("writing {}", path.display()))?;
                 println!("record:   {}", path.display());
             }
@@ -84,13 +84,15 @@ fn main() -> anyhow::Result<()> {
         Command::Validate { record } => {
             let text = std::fs::read_to_string(&record)
                 .with_context(|| format!("reading {}", record.display()))?;
-            let run_record =
-                nw_persistence::RunRecord::from_ron(&text).map_err(anyhow::Error::msg)?;
-            match validate(&run_record, Catalogue::embedded()) {
-                ValidationOutcome::Valid { victory_tick } => {
+            let run_record = nw_persistence::RunRecord::from_ron(&text)
+                .map_err(|error| anyhow::Error::msg(error.to_string()))?;
+            match replay(&run_record, Catalogue::embedded()) {
+                (Verdict::Reproduced, victory_tick) => {
                     println!("valid; victory tick: {victory_tick:?}");
                 }
-                other => bail!("invalid: {other:?}"),
+                // The verdict says which of the three dimensions moved, or
+                // which command or tick diverged — worth printing whole.
+                (other, _) => bail!("invalid: {other}"),
             }
         }
         Command::Batch {

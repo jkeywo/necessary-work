@@ -265,9 +265,19 @@ entities:
         and slightly biased modulo draws — no pinned run fixtures existed, so
         the only gate was that both seeded bots keep winning, which they do),
         and vellum-corpus (the headless batch command runs on the shared
-        drive/tally/permille machinery). vellum-replay's Simulation trait is
-        deliberately NOT adopted: it models command-driven replay, and this
-        game's log is tick-stamped real time — periodic hash sampling, budget
-        and stall detection live in nw-persistence because the scheduler
-        encodes the genre, exactly as the fleet charter says.
+        drive/tally/permille machinery), vellum-replay (see the reversal
+        below) and vellum-save (records are the fleet's Run type: three
+        version dimensions, a divergence ledger, and a gate that names which
+        dimension moved).
+
+        REVERSED: this decision previously recorded that vellum-replay's
+        Simulation trait was deliberately NOT adopted, on the grounds that it
+        models command-driven replay while this game's log is tick-stamped
+        real time. That reasoning was wrong. The trait fits with no change to
+        it once the tick is read as part of the command rather than as
+        something a driver schedules: apply advances to the command's tick and
+        then executes it. Adopting it deleted nw-persistence's hand-written
+        replay loop — command cursor, hash cursor, step budget, stall
+        detection — rather than complicating anything. The scheduler still
+        encodes the genre; what it does not encode is how a log is checked.
       references: [named-rng-streams, saves-logs-validation]

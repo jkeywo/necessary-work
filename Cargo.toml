@@ -32,9 +32,13 @@ postcard = { version = "1", features = ["alloc"] }
 # The fleet's shared foundation, pinned to a rev like every vellum dependency;
 # bumping it is a PR whose diff touches only manifests and lockfiles. For
 # local work against a checkout, use a gitignored .cargo/config.toml [patch].
-vellum-digest = { git = "https://github.com/jkeywo/vellum", rev = "8688ec0243982decf2ffc05883d9ff8b22606fa6" }
-vellum-rng = { git = "https://github.com/jkeywo/vellum", rev = "8688ec0243982decf2ffc05883d9ff8b22606fa6" }
-vellum-corpus = { git = "https://github.com/jkeywo/vellum", rev = "8688ec0243982decf2ffc05883d9ff8b22606fa6" }
+vellum-digest = { git = "https://github.com/jkeywo/vellum", rev = "c064decdcfa07d5082105064c10a6a58a56b2857" }
+vellum-rng = { git = "https://github.com/jkeywo/vellum", rev = "c064decdcfa07d5082105064c10a6a58a56b2857" }
+vellum-corpus = { git = "https://github.com/jkeywo/vellum", rev = "c064decdcfa07d5082105064c10a6a58a56b2857" }
+vellum-replay = { git = "https://github.com/jkeywo/vellum", rev = "c064decdcfa07d5082105064c10a6a58a56b2857" }
+# The Run half of the fleet's saves contract. `run` pulls vellum-replay, which
+# is the point: this game's records are replayable runs.
+vellum-save = { git = "https://github.com/jkeywo/vellum", rev = "c064decdcfa07d5082105064c10a6a58a56b2857", features = ["run"] }
 anyhow = "1"
 thiserror = "2"
 clap = { version = "4", features = ["derive"] }
