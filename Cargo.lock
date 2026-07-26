@@ -4676,12 +4676,12 @@ checksum = "f1bddf1187be692e79c5ffeab891132dfb0f236ed36a43c7ed39f1165ee20191"
 [[package]]
 name = "vellum-corpus"
 version = "0.1.0"
-source = "git+https://github.com/jkeywo/vellum?rev=c064decdcfa07d5082105064c10a6a58a56b2857#c064decdcfa07d5082105064c10a6a58a56b2857"
+source = "git+https://github.com/jkeywo/vellum?rev=3a14d6cfe65d26da549c879ebe495d8f63736814#3a14d6cfe65d26da549c879ebe495d8f63736814"
 
 [[package]]
 name = "vellum-digest"
 version = "0.1.0"
-source = "git+https://github.com/jkeywo/vellum?rev=c064decdcfa07d5082105064c10a6a58a56b2857#c064decdcfa07d5082105064c10a6a58a56b2857"
+source = "git+https://github.com/jkeywo/vellum?rev=3a14d6cfe65d26da549c879ebe495d8f63736814#3a14d6cfe65d26da549c879ebe495d8f63736814"
 dependencies = [
  "base64 0.22.1",
  "postcard",
@@ -4691,12 +4691,12 @@ dependencies = [
 [[package]]
 name = "vellum-replay"
 version = "0.1.0"
-source = "git+https://github.com/jkeywo/vellum?rev=c064decdcfa07d5082105064c10a6a58a56b2857#c064decdcfa07d5082105064c10a6a58a56b2857"
+source = "git+https://github.com/jkeywo/vellum?rev=3a14d6cfe65d26da549c879ebe495d8f63736814#3a14d6cfe65d26da549c879ebe495d8f63736814"
 
 [[package]]
 name = "vellum-rng"
 version = "0.1.0"
-source = "git+https://github.com/jkeywo/vellum?rev=c064decdcfa07d5082105064c10a6a58a56b2857#c064decdcfa07d5082105064c10a6a58a56b2857"
+source = "git+https://github.com/jkeywo/vellum?rev=3a14d6cfe65d26da549c879ebe495d8f63736814#3a14d6cfe65d26da549c879ebe495d8f63736814"
 dependencies = [
  "serde",
 ]
@@ -4704,7 +4704,7 @@ dependencies = [
 [[package]]
 name = "vellum-save"
 version = "0.1.0"
-source = "git+https://github.com/jkeywo/vellum?rev=c064decdcfa07d5082105064c10a6a58a56b2857#c064decdcfa07d5082105064c10a6a58a56b2857"
+source = "git+https://github.com/jkeywo/vellum?rev=3a14d6cfe65d26da549c879ebe495d8f63736814#3a14d6cfe65d26da549c879ebe495d8f63736814"
 dependencies = [
  "ron 0.12.2",
  "serde",
